@@ -1,0 +1,54 @@
+# Arduino IDE / build artifacts
+build/
+*.bin
+*.elf
+*.map
+*.hex
+*.eep
+
+# Arduino IDE temporary files
+*.tmp
+*.bak
+*~
+
+# Compiled object files
+*.o
+*.a
+
+# esptool
+*.img
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+nbproject/
+
+# TFT_eSPI local config — NOT to be committed
+# (use docs/User_Setup_example.h as reference)
+User_Setup.h
+User_Setup_Select.h
+
+# Local notes / scratch
+scratch/
+notes/
+TODO_local.txt
+
+# Python cache (if any test scripts added)
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+*.log
