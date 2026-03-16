@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IW1RMM CW Encoder — Morse Keyer for ESP32 CYD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a1a;--ink-soft:#444;--ink-faint:#888;--rule:#ddd;--bg:#fafaf8;--bg-warm:#f4f2ee;--accent:#c0392b;--accent2:#1a5276;--mono:'IBM Plex Mono',monospace;--serif:'Libre Baskerville',Georgia,serif;--sans:'DM Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;font-size:16px}
+nav{position:sticky;top:0;z-index:100;background:rgba(250,250,248,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{font-family:var(--mono);font-weight:600;font-size:.9rem;color:var(--accent);text-decoration:none}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{font-size:.85rem;font-weight:500;color:var(--ink-soft);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--accent)}
+.morse-strip{background:var(--ink);color:#f9c74f;font-family:var(--mono);font-size:.82rem;letter-spacing:.2em;text-align:center;padding:.55rem;white-space:nowrap;overflow:hidden}
+.hero{max-width:1100px;margin:0 auto;padding:5rem 2rem 4rem;display:grid;grid-template-columns:1fr 360px;gap:4rem;align-items:center}
+.hero-eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem}
+.hero h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.2rem);line-height:1.2;margin-bottom:1.2rem}
+.hero h1 em{font-style:italic;color:var(--accent2)}
+.hero-desc{font-size:1.05rem;color:var(--ink-soft);max-width:520px;margin-bottom:1.8rem;line-height:1.75}
+.hero-sub{font-size:.85rem;color:var(--ink-faint);font-style:italic;margin-bottom:2rem}
+.btn-group{display:flex;gap:1rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;border-radius:4px;font-family:var(--sans);font-size:.88rem;font-weight:600;text-decoration:none;transition:all .2s;letter-spacing:.02em}
+.btn-primary{background:var(--accent);color:#fff;border:2px solid var(--accent)}
+.btn-primary:hover{background:#a93226;border-color:#a93226}
+.btn-secondary{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.btn-secondary:hover{background:var(--ink);color:#fff}
+.hero-img-frame{position:relative}
+.hero-img-frame::before{content:'';position:absolute;top:-12px;left:-12px;width:100%;height:100%;border:2px solid var(--accent2);border-radius:6px;z-index:0}
+.cyd-mockup{position:relative;z-index:1;background:#0d1b2a;border:1px solid #2a4a6a;border-radius:6px;padding:1.4rem;font-family:var(--mono);font-size:.74rem;box-shadow:0 4px 24px rgba(0,0,0,.18);color:#a8c8e8}
+.cyd-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;padding-bottom:.6rem;border-bottom:1px solid #1e3a52}
+.cyd-title{color:#f9c74f;font-weight:600;font-size:.72rem;letter-spacing:.1em}
+.cyd-ver{color:#4a8ab0;font-size:.65rem}
+.cyd-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #132233}
+.cyd-row:last-of-type{border-bottom:none}
+.cyd-val{color:#7ec8e3;font-weight:600}
+.cyd-val.green{color:#52c55a}
+.cyd-val.yellow{color:#f9c74f}
+.cyd-tx{margin-top:.9rem;background:#1a5276;border-radius:3px;padding:.45rem .7rem;color:#7ec8e3;font-size:.76rem;letter-spacing:.06em;line-height:1.5}
+.cursor{animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cyd-tabs{display:flex;gap:.3rem;margin-top:.8rem}
+.cyd-tab{flex:1;text-align:center;padding:3px 0;border-radius:2px;font-size:.62rem;background:#132233;color:#4a8ab0}
+.cyd-tab.active{background:#1a5276;color:#7ec8e3}
+.divider{border:none;border-top:1px solid var(--rule);max-width:1100px;margin:0 auto}
+section{max-width:1100px;margin:0 auto;padding:4rem 2rem}
+.section-label{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+section h2{font-family:var(--serif);font-size:1.8rem;margin-bottom:.6rem}
+.section-intro{color:var(--ink-soft);margin-bottom:2rem;max-width:680px}
+.core-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem;margin-bottom:2.5rem}
+.core-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:1.8rem;border-top:3px solid var(--accent2);transition:box-shadow .2s}
+.core-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.core-card .icon{font-size:1.8rem;margin-bottom:.8rem}
+.core-card h3{font-size:1.05rem;font-weight:600;margin-bottom:.5rem}
+.core-card p{font-size:.88rem;color:var(--ink-soft);line-height:1.65}
+.sec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.sec-card{background:var(--bg-warm);border:1px solid var(--rule);border-radius:6px;padding:1.2rem;transition:border-color .2s}
+.sec-card:hover{border-color:var(--accent2)}
+.sec-card h3{font-size:.88rem;font-weight:600;margin-bottom:.3rem}
+.sec-card p{font-size:.82rem;color:var(--ink-soft);line-height:1.55}
+.badge{display:inline-block;font-family:var(--mono);font-size:.65rem;padding:.1rem .45rem;border-radius:3px;vertical-align:middle}
+.badge-new{background:#fdecea;color:var(--accent);border:1px solid #f5c6c2}
+.badge-gpl{background:#e8f0fb;color:var(--accent2);border:1px solid #c5d8f5}
+.hw-table{width:100%;border-collapse:collapse;font-size:.88rem;max-width:700px}
+.hw-table th{text-align:left;padding:.55rem 1rem;background:var(--bg-warm);border-bottom:2px solid var(--rule);font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.hw-table td{padding:.65rem 1rem;border-bottom:1px solid var(--rule)}
+.hw-table tr:last-child td{border-bottom:none}
+.hw-table td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--accent2);white-space:nowrap}
+.ver-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.ver-table th{text-align:left;padding:.55rem 1rem;background:var(--bg-warm);border-bottom:2px solid var(--rule);font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.ver-table td{padding:.7rem 1rem;border-bottom:1px solid var(--rule);vertical-align:top}
+.ver-table tr:last-child td{border-bottom:none}
+.ver-table tr.current td{background:#f0f6fb}
+.vtag{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--accent2);white-space:nowrap}
+.install-steps{display:flex;flex-direction:column;gap:1.5rem}
+.install-step{display:flex;gap:1.5rem;align-items:flex-start}
+.step-num{flex-shrink:0;width:2rem;height:2rem;background:var(--accent2);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.8rem;font-weight:600;margin-top:.1rem}
+.install-step h3{font-size:.95rem;font-weight:600;margin-bottom:.3rem}
+.install-step p{font-size:.88rem;color:var(--ink-soft)}
+pre{background:var(--ink);color:#e8e8e8;padding:1rem 1.2rem;border-radius:4px;font-family:var(--mono);font-size:.78rem;overflow-x:auto;margin-top:.6rem;line-height:1.7}
+pre .c{color:#7ec8e3}pre .v{color:#f9c74f}
+code{font-family:var(--mono);font-size:.85em;background:#eef2f7;padding:.1em .35em;border-radius:3px;color:var(--accent2)}
+.docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.doc-card{display:flex;align-items:center;gap:1rem;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1.1rem 1.2rem;text-decoration:none;color:var(--ink);transition:all .2s}
+.doc-card:hover{border-color:var(--accent2);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.doc-icon{font-size:1.6rem;flex-shrink:0}
+.doc-card h3{font-size:.88rem;font-weight:600;margin-bottom:.15rem}
+.doc-card span{font-size:.78rem;color:var(--ink-faint)}
+.credits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.credit-card{background:var(--bg-warm);border-radius:6px;padding:1.2rem;border-left:3px solid var(--accent2)}
+.credit-card h3{font-size:.88rem;font-weight:600;margin-bottom:.3rem;color:var(--accent2);font-family:var(--mono)}
+.credit-card p{font-size:.82rem;color:var(--ink-soft);line-height:1.55}
+.credit-card a{color:var(--accent2);font-size:.78rem}
+footer{border-top:1px solid var(--rule);padding:2rem;text-align:center;font-size:.8rem;color:var(--ink-faint);font-family:var(--mono)}
+footer a{color:var(--accent2);text-decoration:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero-text{animation:fadeUp .6s ease both}
+.hero-img-frame{animation:fadeUp .6s .2s ease both}
+@media(max-width:768px){.hero{grid-template-columns:1fr;gap:2.5rem;padding:3rem 1.5rem}.hero-img-frame{display:none}.nav-links{display:none}section{padding:3rem 1.5rem}}
+</style>
+</head>
+<body>
+
+<div class="morse-strip">
+  · · &nbsp;·–&nbsp; —&nbsp; —·–&nbsp; —&nbsp; —··&nbsp; ·–·· &nbsp;&nbsp;&nbsp;
+  IW1RMM &nbsp;·&nbsp; 73 de Mauri &nbsp;·&nbsp; Genova, Italy
+</div>
+
+<nav>
+  <a class="nav-brand" href="#">IW1RMM_CW_Encoder</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#hardware">Hardware</a></li>
+    <li><a href="#versions">Versions</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#docs">Docs</a></li>
+    <li><a href="#case">3D Case</a></li>
+    <li><a href="#credits">Credits</a></li>
+    <li><a href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank">GitHub &#8599;</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="hero-text">
+    <p class="hero-eyebrow">Firmware v7.1.4 &nbsp;·&nbsp; ESP32 CYD &nbsp;·&nbsp; Open Source</p>
+    <h1>A complete<br><em>CW Keyer</em><br>in your hand.</h1>
+    <p class="hero-desc">
+      The IW1RMM CW Encoder turns a &euro;10 ESP32 touchscreen board into a
+      full-featured Morse code keyer &mdash; all keying modes, speed control,
+      preset messages, SD card playback, Bluetooth wireless control, and much more.
+      Plug in your paddle and key.
+    </p>
+    <p class="hero-sub">
+      Developed by Mauri IW1RMM, 2025&ndash;2026 &nbsp;&middot;&nbsp;
+      Based on original firmware by VK2IDL &nbsp;&middot;&nbsp;
+      <span class="badge badge-gpl">GPL v3</span>
+    </p>
+    <div class="btn-group">
+      <a class="btn btn-primary" href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank">View on GitHub</a>
+      <a class="btn btn-secondary" href="#install">Get Started</a>
+    </div>
+  </div>
+  <div class="hero-img-frame">
+    <div class="cyd-mockup">
+      <div class="cyd-top">
+        <span class="cyd-title">IW1RMM CW ENCODER</span>
+        <span class="cyd-ver">v7.1.4</span>
+      </div>
+      <div class="cyd-row"><span>Mode</span><span class="cyd-val yellow">IAMBIC B</span></div>
+      <div class="cyd-row"><span>Speed</span><span class="cyd-val">22 WPM</span></div>
+      <div class="cyd-row"><span>Tone</span><span class="cyd-val">650 Hz</span></div>
+      <div class="cyd-row"><span>Volume</span><span class="cyd-val">3 / 4</span></div>
+      <div class="cyd-row"><span>BLE</span><span class="cyd-val green">CONNECTED</span></div>
+      <div class="cyd-row"><span>Touch cal</span><span class="cyd-val green">OK &#10003;</span></div>
+      <div class="cyd-tx">&#9654;&nbsp; CQ CQ CQ DE IW1RMM IW1RMM K<span class="cursor">&#9608;</span></div>
+      <div class="cyd-tabs">
+        <div class="cyd-tab active">MORSE 1</div>
+        <div class="cyd-tab">MORSE 2</div>
+        <div class="cyd-tab">SD</div>
+        <div class="cyd-tab">SETTINGS</div>
+        <div class="cyd-tab">SPARE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<section id="features">
+  <p class="section-label">What it does</p>
+  <h2>Built around the paddle.</h2>
+  <p class="section-intro">
+    Everything starts with a paddle and a key output. The IW1RMM CW Encoder is first and foremost
+    a high-quality Morse keyer &mdash; then a touchscreen interface, a message player, a beacon, and a contest tool.
+  </p>
+  <div class="core-grid">
+    <div class="core-card">
+      <div class="icon">&#128400;</div>
+      <h3>All Keying Modes</h3>
+      <p>Iambic A, Iambic B, Manual (straight key), Auto (electronic bug), Ultimatic. Switch modes in one tap. Each transmitted character is decoded in real time and shown on the scrolling display &mdash; even in manual mode.</p>
+    </div>
+    <div class="core-card">
+      <div class="icon">&#9881;&#65039;</div>
+      <h3>Precise Speed &amp; Timing Control</h3>
+      <p>5 to 100 WPM on screen. Full control over DAH ratio (2.0&ndash;4.5&times;), inter-element spacing weight, and Farnsworth character spacing for training. All values saved to non-volatile memory and restored on every boot.</p>
+    </div>
+    <div class="core-card">
+      <div class="icon">&#128250;</div>
+      <h3>LVGL Touchscreen Interface</h3>
+      <p>A clean, responsive 5-tab graphical UI on the 2.8&quot; ILI9341 display. Scrolling text bars show transmitted characters live. Interactive 4-point touch calibration on first boot, stored permanently in NVS. <span class="badge badge-new">NEW v7.1.4</span></p>
+    </div>
+    <div class="core-card">
+      <div class="icon">&#128172;</div>
+      <h3>6 Editable Preset Messages</h3>
+      <p>CQ, Name, Test, Ant/Rig, RST, Free &mdash; send any message with a single tap. Edit directly on screen with the virtual keyboard. Stored permanently in NVS flash. Messages can be sent individually or chained automatically.</p>
+    </div>
+    <div class="core-card">
+      <div class="icon">&#128193;</div>
+      <h3>SD Card Text Player</h3>
+      <p>Load any .txt file from MicroSD and transmit it in Morse at any speed. Full PLAY / PAUSE / STOP control. Text scrolls live on the display as it is transmitted. Ideal for long-text practice or automated operation.</p>
+    </div>
+    <div class="core-card">
+      <div class="icon">&#128225;</div>
+      <h3>Wireless BLE Control</h3>
+      <p>Built-in Bluetooth Low Energy (Nordic UART) lets you control the keyer from any Android phone or PC. Send text, change speed, play memories, query status. Always available regardless of operating mode. <span class="badge badge-new">FIX v7.1.3</span></p>
+    </div>
+  </div>
+
+  <p class="section-label" style="margin-top:1rem;">More features</p>
+  <div class="sec-grid">
+    <div class="sec-card"><h3>&#128257; Beacon Mode</h3><p>Automatic CQ at configurable intervals (10&ndash;600 s). Ideal for propagation tests and unattended beacons.</p></div>
+    <div class="sec-card"><h3>&#127942; Contest Mode</h3><p>Auto-incrementing serial number per transmission. Counter saved to NVS and survives reboots.</p></div>
+    <div class="sec-card"><h3>&#128251; Sidetone DAC</h3><p>Internal ESP32 DAC generates clean sidetone, 300&ndash;1200 Hz adjustable. Four volume levels. No external audio chip needed.</p></div>
+    <div class="sec-card"><h3>&#9889; HSCW</h3><p>High Speed CW (60&ndash;100+ WPM) for meteor scatter and aurora contacts.</p></div>
+    <div class="sec-card"><h3>&#128300; QRSS</h3><p>Ultra-slow CW (3s, 6s, 10s, 30s per DIT) for low-power propagation experiments and QRSS grabbers.</p></div>
+    <div class="sec-card"><h3>&#10022; Prosign Support</h3><p>Full prosign set: &lt;AR&gt; &lt;SK&gt; &lt;BT&gt; &lt;KN&gt; &lt;AS&gt; &lt;SN&gt; &mdash; sent without inter-character space, per ITU standard.</p></div>
+    <div class="sec-card"><h3>&#128336; Clock</h3><p>Built-in digital clock on display. Optional DS3231 RTC for persistent timekeeping across reboots.</p></div>
+    <div class="sec-card"><h3>&#128190; SD Logging</h3><p>All transmitted characters logged to CSV with timestamp, WPM, frequency and session metadata.</p></div>
+    <div class="sec-card"><h3>&#128268; Paddle Swap</h3><p>Swap DIT and DAH in one tap. For left-handed operators or reversed cables.</p></div>
+    <div class="sec-card"><h3>&#128279; WinKey WK3</h3><p>Full WinKey 2.3 binary protocol at 1200 baud for N1MM+, Win-Test, DXLog and other logging software.</p></div>
+    <div class="sec-card"><h3>&#9000;&#65039; K3NG Serial</h3><p>K3NG ASCII command set at 115200 baud via USB serial and BLE. Backslash commands for full control.</p></div>
+    <div class="sec-card"><h3>&#128736;&#65039; FreeRTOS</h3><p>morseTask on Core 0, LVGL on Core 1. 1 kHz hardware timer for sub-millisecond keying accuracy.</p></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section id="hardware" style="padding-top:3rem;padding-bottom:3rem;">
+  <p class="section-label">Hardware</p>
+  <h2>The ESP32-2432S028R (CYD)</h2>
+  <p class="section-intro">Everything you need in a single &euro;10 board. No external display, no extra MCU, no separate audio chip.</p>
+  <table class="hw-table">
+    <tr><th>Component</th><th>Detail</th></tr>
+    <tr><td>MCU</td><td>ESP32-D0WD dual-core 240 MHz &middot; 520 KB RAM &middot; 4 MB flash</td></tr>
+    <tr><td>Display</td><td>ILI9341 2.8&quot; TFT 320&times;240 &middot; SPI (VSPI)</td></tr>
+    <tr><td>Touch</td><td>XPT2046 resistive &middot; SPI (HSPI) &middot; 4-point calibrated</td></tr>
+    <tr><td>KEY / PTT output</td><td>GPIO 27 &middot; shared pin &middot; HIGH = active</td></tr>
+    <tr><td>Sidetone</td><td>GPIO 25 DAC &middot; 300&ndash;1200 Hz adjustable</td></tr>
+    <tr><td>Left paddle (DIT)</td><td>GPIO 35</td></tr>
+    <tr><td>Right paddle (DAH)</td><td>GPIO 22</td></tr>
+    <tr><td>SD card</td><td>HSPI &middot; GPIO 18 / 19 / 23 / 5</td></tr>
+    <tr><td>Power</td><td>USB-C 5V &middot; no external supply needed</td></tr>
+    <tr><td>Wireless</td><td>BLE 4.2 integrated &middot; Wi-Fi available for future use</td></tr>
+  </table>
+</section>
+
+<hr class="divider">
+
+<section id="versions">
+  <p class="section-label">Changelog</p>
+  <h2>Version History</h2>
+  <table class="ver-table">
+    <tr><th>Version</th><th>Changes</th></tr>
+    <tr class="current">
+      <td><span class="vtag">v7.1.4</span></td>
+      <td>Interactive 4-point touch calibration. Separate NVS namespace <code>touch_cal</code>. Serial escape, timeout and fallback protection. New K3NG commands <code>\J \Y \X \E</code>. <span class="badge badge-new">LATEST</span></td>
+    </tr>
+    <tr><td><span class="vtag">v7.1.3</span></td><td>BLE fix: device name now visible on Android BLE scan. Name set in primary advertising payload; service UUID moved to scan response.</td></tr>
+    <tr><td><span class="vtag">v7.1.2</span></td><td>MANUAL mode fix: characters now displayed on text bars. mySet[] extended to 121 elements (full ITU punctuation + prosigns). Prosign display: &lt;AR&gt; &lt;BT&gt; &lt;SK&gt; etc.</td></tr>
+    <tr><td><span class="vtag">v7.1.1</span></td><td>FreeRTOS multi-task architecture refactoring. BLE with native BLEDevice. morseTask stack increased to 8192 bytes.</td></tr>
+    <tr><td><span class="vtag">v6.9.0</span></td><td>Base version by VK2IDL. Complete Morse keyer, BLE Nordic UART, SD player, WinKey 2.3, K3NG serial, LVGL 5 tabs, clock, QRSS, Farnsworth, beacon, contest.</td></tr>
+  </table>
+</section>
+
+<hr class="divider">
+
+<section id="install">
+  <p class="section-label">Getting Started</p>
+  <h2>Installation</h2>
+  <div class="install-steps">
+
+    <div class="install-step"><div class="step-num">1</div><div>
+      <h3>Clone the repository</h3>
+      <pre><span class="c">git clone</span> https://github.com/mfalco1959/IW1RMM_CW_Encoder.git</pre>
+      <p style="margin-top:.5rem;">Or download the ZIP from GitHub and extract it.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">2</div><div>
+      <h3>Install the ESP32 board package</h3>
+      <p>In Arduino IDE: <strong>File &rarr; Preferences &rarr; Additional boards manager URLs</strong>, add:</p>
+      <pre>https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</pre>
+      <p style="margin-top:.5rem;">Then <strong>Tools &rarr; Board &rarr; Boards Manager</strong> &rarr; search <code>esp32</code> &rarr; install <strong>esp32 by Espressif Systems</strong>.</p>
+      <p style="margin-top:.4rem; font-size:.82rem; color:var(--accent);">&#9888; Tested with ESP32 Arduino Core <strong>3.x</strong>. The BLE and DacESP32 libraries require Core 3.x &mdash; do not use 2.x.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">3</div><div>
+      <h3>Install required libraries</h3>
+      <p>In Arduino IDE: <strong>Sketch &rarr; Include Library &rarr; Manage Libraries</strong></p>
+      <table class="hw-table" style="margin-top:.8rem;">
+        <tr><th>Library</th><th>Author</th><th>How to install</th></tr>
+        <tr><td>lvgl</td><td>LVGL</td><td>Library Manager &rarr; search <code>lvgl</code></td></tr>
+        <tr><td>TFT_eSPI</td><td>Bodmer</td><td>Library Manager &rarr; search <code>TFT_eSPI</code></td></tr>
+        <tr><td>XPT2046_Touchscreen</td><td>Paul Stoffregen</td><td>Library Manager &rarr; search <code>XPT2046</code></td></tr>
+        <tr><td>DacESP32</td><td>Florian T&uuml;nte</td><td>Library Manager &rarr; search <code>DacESP32</code></td></tr>
+        <tr><td>SD</td><td>Arduino</td><td>Built-in &mdash; no install needed</td></tr>
+        <tr><td>SPI</td><td>Arduino</td><td>Built-in &mdash; no install needed</td></tr>
+        <tr><td>Preferences (NVS)</td><td>Espressif</td><td>Built-in with ESP32 Core</td></tr>
+        <tr><td>BLEDevice / BLEServer / BLEUtils / BLE2902</td><td>Espressif</td><td>Built-in with ESP32 Core</td></tr>
+        <tr><td>esp_bt.h</td><td>Espressif</td><td>Built-in with ESP32 Core (ESP-IDF)</td></tr>
+      </table>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">4</div><div>
+      <h3>Configure TFT_eSPI</h3>
+      <p>Copy <code>docs/User_Setup_example.h</code> to your TFT_eSPI library folder
+      (typically <code>Documents/Arduino/libraries/TFT_eSPI/</code>) and rename it <code>User_Setup.h</code>,
+      replacing the existing file. Key settings for the CYD:</p>
+      <pre><span class="c">#define</span> <span class="v">ILI9341_DRIVER</span>
+<span class="c">#define</span> TFT_MISO  <span class="v">12</span>
+<span class="c">#define</span> TFT_MOSI  <span class="v">13</span>
+<span class="c">#define</span> TFT_SCLK  <span class="v">14</span>
+<span class="c">#define</span> TFT_CS    <span class="v">15</span>
+<span class="c">#define</span> TFT_DC     <span class="v">2</span>
+<span class="c">#define</span> TFT_RST   <span class="v">-1</span>
+<span class="c">#define</span> TOUCH_CS  <span class="v">-1</span>
+<span class="c">#define</span> SPI_FREQUENCY  <span class="v">40000000</span></pre>
+      <p style="margin-top:.4rem; font-size:.82rem; color:var(--accent);">&#9888; Make sure <code>TFT_MISO 12</code> is defined and NOT commented out &mdash; the SD card will fail otherwise.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">5</div><div>
+      <h3>Copy lv_conf.h</h3>
+      <p>Copy <code>include/lv_conf.h</code> from this repository into your LVGL library folder
+      (typically <code>Documents/Arduino/libraries/lvgl/</code>), replacing the existing file.
+      This file enables the fonts used by the UI &mdash; without it the sketch will not compile.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">6</div><div>
+      <h3>Arduino IDE upload settings</h3>
+      <p>Select board and configure upload options exactly as shown:</p>
+      <table class="hw-table" style="margin-top:.8rem; max-width:500px;">
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>Board</td><td>ESP32 Dev Module</td></tr>
+        <tr><td>Flash Mode</td><td><strong>DIO</strong></td></tr>
+        <tr><td>Flash Frequency</td><td><strong>40 MHz</strong></td></tr>
+        <tr><td>Partition Scheme</td><td>Default 4MB with spiffs</td></tr>
+        <tr><td>Upload Speed</td><td>115200</td></tr>
+        <tr><td>Core Debug Level</td><td>None</td></tr>
+      </table>
+      <p style="margin-top:.5rem; font-size:.82rem; color:var(--accent);">&#9888; <strong>DIO + 40 MHz are mandatory.</strong> CYD boards often use ZBIT ZB25VQ32 flash chips that are
+      sensitive to faster or QIO settings &mdash; using QIO or 80 MHz will cause upload failures or boot loops.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">7</div><div>
+      <h3>Open the sketch and upload</h3>
+      <p>Open <code>IW1RMM_CW_Encoder/IW1RMM_CW_Encoder.ino</code> in Arduino IDE.
+      Connect the CYD via USB-C. Select the correct COM port under <strong>Tools &rarr; Port</strong>.
+      Click <strong>Upload</strong>.</p>
+      <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">On first boot, the touch calibration wizard will start automatically.
+      Follow the on-screen instructions to touch each of the 4 corner crosshairs.
+      Calibration is saved permanently &mdash; it will not repeat on subsequent boots.</p>
+    </div></div>
+
+    <div class="install-step"><div class="step-num">8</div><div>
+      <h3>Alternative: flash precompiled binary with esptool</h3>
+      <p>If you prefer not to use Arduino IDE, flash the precompiled <code>.bin</code> directly:</p>
+      <pre>python -m esptool --chip esp32 --port COM4 --baud 115200 \
+  --before default-reset --after hard-reset \
+  write-flash -z --flash-mode dio --flash-freq 40m \
+  --flash-size detect 0x10000 IW1RMM_CW_Encoder_v714.bin</pre>
+      <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">Replace <code>COM4</code> with your actual port (Linux: <code>/dev/ttyUSB0</code>, Mac: <code>/dev/cu.usbserial-*</code>).</p>
+    </div></div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<section id="case">
+  <p class="section-label">3D Printable Case</p>
+  <h2>Enclosure for the CYD</h2>
+  <p class="section-intro">A complete printable enclosure designed for the ESP32-2432S028R board. Print with PLA or PETG, 0.2 mm layer height. Files render in 3D directly on GitHub.</p>
+  <div class="docs-grid">
+    <a class="doc-card" href="hardware/Case-Front_Panel.stl">
+      <div class="doc-icon">🖨️</div>
+      <div><h3>Case-Front_Panel.stl</h3><span>Front panel</span></div>
+    </a>
+    <a class="doc-card" href="hardware/Case-Rear_Panel.stl">
+      <div class="doc-icon">🖨️</div>
+      <div><h3>Case-Rear_Panel.stl</h3><span>Rear panel</span></div>
+    </a>
+    <a class="doc-card" href="hardware/Speaker-Cap.stl">
+      <div class="doc-icon">🖨️</div>
+      <div><h3>Speaker-Cap.stl</h3><span>Speaker cap</span></div>
+    </a>
+    <a class="doc-card" href="hardware/Washer.stl">
+      <div class="doc-icon">🖨️</div>
+      <div><h3>Washer.stl</h3><span>Washer</span></div>
+    </a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section id="docs">
+  <p class="section-label">Documentation</p>
+  <h2>Reference Documents</h2>
+  <div class="docs-grid">
+    <a class="doc-card" href="docs/CYD_Device_and_Functions_CW_Encoder_EN.docx"><div class="doc-icon">&#128216;</div><div><h3>Device &amp; Features Guide</h3><span>English &middot; DOCX</span></div></a>
+    <a class="doc-card" href="docs/CYD_Device_e_Funzioni_CW_Encoder_IT.docx"><div class="doc-icon">&#128216;</div><div><h3>Guida Dispositivo e Funzioni</h3><span>Italiano &middot; DOCX</span></div></a>
+    <a class="doc-card" href="docs/IW1RMM_v714_Software_Routine_Analysis_EN.docx"><div class="doc-icon">&#128217;</div><div><h3>Software Routine Analysis</h3><span>English &middot; DOCX &middot; v7.1.4</span></div></a>
+    <a class="doc-card" href="docs/VK2IDL_v69_Analisi_Routine_SW_IT.docx"><div class="doc-icon">&#128217;</div><div><h3>Analisi Routine Software</h3><span>Italiano &middot; DOCX &middot; v6.9.0</span></div></a>
+    <a class="doc-card" href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank"><div class="doc-icon">&#9881;&#65039;</div><div><h3>Source Code</h3><span>GitHub Repository</span></div></a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section id="credits">
+  <p class="section-label">Acknowledgements</p>
+  <h2>Credits</h2>
+  <div class="credits-grid">
+    <div class="credit-card"><h3>VK2IDL</h3><p>Original CW Encoder firmware. This project is built upon VK2IDL's foundational work and would not exist without it.</p></div>
+    <div class="credit-card"><h3>K3NG &mdash; Anthony Good</h3><p>K3NG Arduino CW Keyer &mdash; command set and protocol reference.<br><a href="https://github.com/k3ng/k3ng_cw_keyer" target="_blank">github.com/k3ng</a></p></div>
+    <div class="credit-card"><h3>K1EL</h3><p>WinKey 2/3 protocol specification and WK3 IC datasheet.<br><a href="https://www.k1el.com" target="_blank">k1el.com</a></p></div>
+    <div class="credit-card"><h3>LVGL</h3><p>Light and Versatile Graphics Library &mdash; the embedded GUI engine powering this project.<br><a href="https://lvgl.io" target="_blank">lvgl.io</a></p></div>
+    <div class="credit-card"><h3>Brian Lough</h3><p>ESP32 Cheap Yellow Display community &mdash; documentation, pinouts and hardware resources.</p></div>
+    <div class="credit-card"><h3>IW1RMM &mdash; Mauri</h3><p>Architecture, WinKey protocol, BLE, FreeRTOS integration, LVGL UI, touch calibration, K3NG extensions. Genova, Italy &mdash; 2025/2026.</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>IW1RMM CW Encoder &nbsp;&middot;&nbsp; v7.1.4 &nbsp;&middot;&nbsp;
+  <a href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank">GitHub</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">GPL v3</a>
+  &nbsp;&middot;&nbsp; 73 de IW1RMM</p>
+</footer>
+
+</body>
+</html>

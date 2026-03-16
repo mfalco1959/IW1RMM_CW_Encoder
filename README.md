@@ -218,6 +218,22 @@ Full reference: see `docs/` folder.
 
 ---
 
+## 3D Printable Case
+
+The project includes a complete 3D printable enclosure for the CYD board.
+Files are in the `hardware/` folder — print with PLA or PETG, 0.2 mm layer height.
+
+| File | Part |
+|---|---|
+| [Case-Front_Panel.stl](hardware/Case-Front_Panel.stl) | Front panel |
+| [Case-Rear_Panel.stl](hardware/Case-Rear_Panel.stl) | Rear panel |
+| [Speaker-Cap.stl](hardware/Speaker-Cap.stl) | Speaker cap |
+| [Washer.stl](hardware/Washer.stl) | Washer |
+
+> GitHub renders STL files in 3D — click any file above to preview it in the browser.
+
+---
+
 ## Credits
 
 - **Original firmware**: VK2IDL — foundational CW encoder design
