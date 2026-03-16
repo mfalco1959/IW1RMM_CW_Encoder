@@ -113,17 +113,17 @@ Then **Tools → Board → Boards Manager** → search `esp32` → install **esp
 
 In Arduino IDE: **Sketch → Include Library → Manage Libraries**
 
-| Library | Author | How to install |
-|---|---|---|
-| lvgl | LVGL | Library Manager → search `lvgl` |
-| TFT_eSPI | Bodmer | Library Manager → search `TFT_eSPI` |
-| XPT2046_Touchscreen | Paul Stoffregen | Library Manager → search `XPT2046` |
-| DacESP32 | Florian Tünte | Library Manager → search `DacESP32` |
-| SD | Arduino | Built-in — no install needed |
-| SPI | Arduino | Built-in — no install needed |
-| Preferences | Espressif | Built-in with ESP32 Core |
-| BLEDevice / BLEServer / BLEUtils / BLE2902 | Espressif | Built-in with ESP32 Core |
-| esp_bt.h | Espressif | Built-in with ESP32 Core (ESP-IDF) |
+| Library | Version | Author | How to install |
+|---|---|---|---|
+| lvgl | **8.4.0** | LVGL | Library Manager → search `lvgl` |
+| TFT_eSPI | **2.5.43** | Bodmer | Library Manager → search `TFT_eSPI` |
+| XPT2046_Touchscreen | **1.4** | Paul Stoffregen | Library Manager → search `XPT2046` |
+| DacESP32 | **2.1.2** | Florian Tünte | Library Manager → search `DacESP32` |
+| SD | built-in | Arduino | Built-in — no install needed |
+| SPI | built-in | Arduino | Built-in — no install needed |
+| Preferences | built-in | Espressif | Built-in with ESP32 Core |
+| BLEDevice / BLEServer / BLEUtils / BLE2902 | built-in | Espressif | Built-in with ESP32 Core |
+| esp_bt.h | built-in | Espressif | Built-in with ESP32 Core (ESP-IDF) |
 
 ### 3. Configure TFT_eSPI
 
@@ -252,4 +252,4 @@ See [LICENSE](LICENSE) for the full text.
 
 ---
 
-*73 de IW1RMM — Mauri, Genova, Italy*
+*73 de IW1RMM — Mauri, Savona, Italy*
