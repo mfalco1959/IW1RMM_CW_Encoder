@@ -118,7 +118,7 @@ In Arduino IDE: **Sketch → Include Library → Manage Libraries**
 | lvgl | **8.4.0** | LVGL | Library Manager → search `lvgl` |
 | TFT_eSPI | **2.5.43** | Bodmer | Library Manager → search `TFT_eSPI` |
 | XPT2046_Touchscreen | **1.4** | Paul Stoffregen | Library Manager → search `XPT2046` |
-| DacESP32 | **2.1.2** | Florian Tünte | Library Manager → search `DacESP32` |
+| DacESP32 | **2.1.2** | Thomas Jentzsch | Library Manager → search `DacESP32` |
 | SD | built-in | Arduino | Built-in — no install needed |
 | SPI | built-in | Arduino | Built-in — no install needed |
 | Preferences | built-in | Espressif | Built-in with ESP32 Core |
