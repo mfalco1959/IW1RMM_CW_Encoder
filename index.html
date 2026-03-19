@@ -323,8 +323,8 @@ footer a{color:var(--accent2);text-decoration:none}
 
     <div class="install-step"><div class="step-num">5</div><div>
       <h3>Copy lv_conf.h</h3>
-      <p>Copy <code>include/lv_conf.h</code> from this repository into your LVGL library folder
-      (typically <code>Documents/Arduino/libraries/lvgl/</code>), replacing the existing file.
+      <p>Copy <code>include/lv_conf.h</code> from this repository into the sketch folder
+      (same directory as <code>IW1RMM_CW_Encoder.ino</code>).
       This file enables the fonts used by the UI &mdash; without it the sketch will not compile.</p>
     </div></div>
 
@@ -336,12 +336,13 @@ footer a{color:var(--accent2);text-decoration:none}
         <tr><td>Board</td><td>ESP32 Dev Module</td></tr>
         <tr><td>Flash Mode</td><td><strong>DIO</strong></td></tr>
         <tr><td>Flash Frequency</td><td><strong>40 MHz</strong></td></tr>
-        <tr><td>Partition Scheme</td><td>Default 4MB with spiffs</td></tr>
+        <tr><td>Partition Scheme</td><td><strong>Huge APP (3MB No OTA/1MB SPIFFS)</strong></td></tr>
         <tr><td>Upload Speed</td><td>115200</td></tr>
         <tr><td>Core Debug Level</td><td>None</td></tr>
       </table>
       <p style="margin-top:.5rem; font-size:.82rem; color:var(--accent);">&#9888; <strong>DIO + 40 MHz are mandatory.</strong> CYD boards often use ZBIT ZB25VQ32 flash chips that are
       sensitive to faster or QIO settings &mdash; using QIO or 80 MHz will cause upload failures or boot loops.</p>
+      <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">&#128161; <strong>Upload speed:</strong> 115200 baud is the safe recommended value. If you plan to upload only occasionally, you may try increasing the speed (e.g. 460800 or 921600) to reduce upload time, but stability depends on your USB cable and PC driver.</p>
     </div></div>
 
     <div class="install-step"><div class="step-num">7</div><div>

@@ -103,12 +103,16 @@ Supporta lo stesso set di comandi K3NG disponibile via Serial.
 
 ## Dipendenze (librerie Arduino)
 
-- LVGL ≥ 8.x
-- TFT_eSPI
-- XPT2046_Touchscreen
-- ESP32 BLE Arduino
-- ESP32 Preferences (NVS)
-- SD (built-in)
+| Libreria | Versione | Autore |
+|----------|----------|--------|
+| lvgl | **8.4.0** | LVGL |
+| TFT_eSPI | **2.5.43** | Bodmer |
+| XPT2046_Touchscreen | **1.4** | Paul Stoffregen |
+| DacESP32 | **2.1.2** | Thomas Jentzsch |
+| Preferences (NVS) | built-in | Espressif |
+| BLE (BLEDevice/BLEServer/BLEUtils/BLE2902) | built-in | Espressif |
+
+> ⚠️ Testato con ESP32 Arduino Core **3.x**. Le librerie BLE e DacESP32 richiedono Core 3.x — non usare la versione 2.x.
 
 ---
 
@@ -118,16 +122,19 @@ Supporta lo stesso set di comandi K3NG disponibile via Serial.
 ```bash
 git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 ```
-2. Copia `include/lv_conf.h` nella cartella delle librerie LVGL
+2. Copia `include/lv_conf.h` nella cartella dello sketch (stessa directory di `IW1RMM_CW_Encoder.ino`)
 3. Configura `User_Setup.h` di TFT_eSPI (vedi `docs/User_Setup_example.h`)
 4. Compila con Arduino IDE — board: **ESP32 Dev Module**  
    In **Tools**, imposta:
    - Flash Mode: **DIO**
    - Flash Frequency: **40MHz**
    - Partition Scheme: **Huge APP (3MB No OTA/1MB SPIFFS)**
-5. Upload via Arduino IDE — il firmware è di grandi dimensioni, **l'upload richiederà alcuni minuti** (large sketch upload time is expected).
+   - Upload Speed: **115200**
+5. Upload via Arduino IDE — il firmware è di grandi dimensioni, **l'upload richiederà alcuni minuti**.
 
-> **Nota:** I parametri Flash Mode DIO e Flash Frequency 40MHz sono necessari per compatibilità con il chip ZBIT presente in alcune unità CYD.
+> ⚠️ **DIO + 40MHz sono obbligatori.** Le schede CYD usano spesso il chip flash ZBIT ZB25VQ32, sensibile a impostazioni QIO o 80MHz — l'uso di QIO o 80MHz può causare errori di upload o boot loop.
+
+> 💡 **Velocità di upload:** 115200 baud è il valore sicuro e raccomandato. Se si prevede di fare pochi upload è possibile provare a incrementare la velocità (es. 460800 o 921600) per ridurre i tempi, ma la stabilità dipende dal cavo USB e dal driver del PC.
 
 ---
 

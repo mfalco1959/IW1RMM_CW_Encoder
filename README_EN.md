@@ -103,12 +103,16 @@ It supports the same K3NG command set available via Serial.
 
 ## Dependencies (Arduino libraries)
 
-- LVGL ≥ 8.x
-- TFT_eSPI
-- XPT2046_Touchscreen
-- ESP32 BLE Arduino
-- ESP32 Preferences (NVS)
-- SD (built-in)
+| Library | Version | Author |
+|---------|---------|--------|
+| lvgl | **8.4.0** | LVGL |
+| TFT_eSPI | **2.5.43** | Bodmer |
+| XPT2046_Touchscreen | **1.4** | Paul Stoffregen |
+| DacESP32 | **2.1.2** | Thomas Jentzsch |
+| Preferences (NVS) | built-in | Espressif |
+| BLE (BLEDevice/BLEServer/BLEUtils/BLE2902) | built-in | Espressif |
+
+> ⚠️ Tested with ESP32 Arduino Core **3.x**. The BLE and DacESP32 libraries require Core 3.x — do not use version 2.x.
 
 ---
 
@@ -118,16 +122,19 @@ It supports the same K3NG command set available via Serial.
 ```bash
 git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 ```
-2. Copy `include/lv_conf.h` to the LVGL library folder
+2. Copy `include/lv_conf.h` into the sketch folder (same directory as `IW1RMM_CW_Encoder.ino`)
 3. Configure TFT_eSPI `User_Setup.h` (see `docs/User_Setup_example.h`)
 4. Compile with Arduino IDE — board: **ESP32 Dev Module**  
    In **Tools**, set:
    - Flash Mode: **DIO**
    - Flash Frequency: **40MHz**
    - Partition Scheme: **Huge APP (3MB No OTA/1MB SPIFFS)**
-5. Upload via Arduino IDE — due to the large sketch size, **upload will take several minutes** (large sketch upload time is expected).
+   - Upload Speed: **115200**
+5. Upload via Arduino IDE — due to the large sketch size, **upload will take several minutes**.
 
-> **Note:** Flash Mode DIO and Flash Frequency 40MHz are required for compatibility with the ZBIT flash chip found in some CYD units.
+> ⚠️ **DIO + 40MHz are mandatory.** CYD boards often use ZBIT ZB25VQ32 flash chips that are sensitive to QIO or 80MHz settings — using QIO or 80MHz will cause upload failures or boot loops.
+
+> 💡 **Upload speed:** 115200 baud is the safe recommended value. If you plan to upload only occasionally, you may try increasing the speed (e.g. 460800 or 921600) to reduce upload time, but stability depends on your USB cable and PC driver.
 
 ---
 
