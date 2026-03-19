@@ -11,19 +11,19 @@ Basato sul firmware originale di VK2IDL, esteso e adattato per il CYD.
 
 ### Schema elettrico
 
-![Schema elettrico del CW Keyer](images/schematic.jpg)
+![Schema elettrico del CW Keyer](IW1RMM_CW_Encoder/images/schematic.jpg)
 
 ### Collegamento paddle e tasto verticale
 
-![Collegamento plug tasto verticale e paddle — transistor 2N2222 TO-92 e TO-18](images/hardware_connections.jpg)
+![Collegamento plug tasto verticale e paddle — transistor 2N2222 TO-92 e TO-18](IW1RMM_CW_Encoder/images/hardware_connections.jpg)
 
 ### Vista interna dei collegamenti
 
-![Vista interna dei collegamenti](images/internal_wiring.jpg)
+![Vista interna dei collegamenti](IW1RMM_CW_Encoder/images/internal_wiring.jpg)
 
 ### Vista d'insieme
 
-![Il CYD nel case con il paddle collegato](images/device_overview.jpg)
+![Il CYD nel case con il paddle collegato](IW1RMM_CW_Encoder/images/device_overview.jpg)
 
 ---
 
@@ -47,27 +47,27 @@ Basato sul firmware originale di VK2IDL, esteso e adattato per il CYD.
 
 ### Tab Morse 1
 
-![Schermata Tab Morse 1](images/tab_morse1.jpg)
+![Schermata Tab Morse 1](IW1RMM_CW_Encoder/images/tab_morse1.jpg)
 
 ### Keyboard — long press
 
-![Schermata Keyboard — long press sui tasti CQ, NAME ecc.](images/tab_keyboard.jpg)
+![Schermata Keyboard — long press sui tasti CQ, NAME ecc.](IW1RMM_CW_Encoder/images/tab_keyboard.jpg)
 
 ### Tab Morse 2
 
-![Schermata Tab Morse 2](images/tab_morse2.jpg)
+![Schermata Tab Morse 2](IW1RMM_CW_Encoder/images/tab_morse2.jpg)
 
 ### Tab SD
 
-![Schermata Tab SD](images/tab_sd.jpg)
+![Schermata Tab SD](IW1RMM_CW_Encoder/images/tab_sd.jpg)
 
 ### Tab Settings — stato di default
 
-![Schermata Tab Settings — stato di default](images/tab_settings.jpg)
+![Schermata Tab Settings — stato di default](IW1RMM_CW_Encoder/images/tab_settings.jpg)
 
 ### Tab Settings — con i tasti attivi
 
-![Schermata Tab Settings — con i tasti attivi](images/tab_settings_active.jpg)
+![Schermata Tab Settings — con i tasti attivi](IW1RMM_CW_Encoder/images/tab_settings_active.jpg)
 
 ---
 
@@ -78,7 +78,7 @@ Supporta lo stesso set di comandi K3NG disponibile via Serial.
 
 ### Comandi K3NG via BLE — screenshot smartphone
 
-![Screenshot smartphone — comandi K3NG via BLE](images/ble_smartphone.jpg)
+![Screenshot smartphone — comandi K3NG via BLE](IW1RMM_CW_Encoder/images/ble_smartphone.jpg)
 
 ---
 
