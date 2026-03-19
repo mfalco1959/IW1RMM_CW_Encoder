@@ -1,255 +1,173 @@
 # IW1RMM CW Encoder
 
-**A complete Morse code keyer for the ESP32 CYD — firmware v7.1.4**
+**Firmware v7.1.4 — IW1RMM (Mauri)**
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Platform: ESP32](https://img.shields.io/badge/Platform-ESP32-green.svg)](https://www.espressif.com/en/products/socs/esp32)
-[![Hardware: CYD](https://img.shields.io/badge/Hardware-ESP32--2432S028R-yellow.svg)](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
-
-**Developed by Mauri IW1RMM, 2025–2026 — Based on original firmware by VK2IDL**
-
----
-
-## Overview
-
-The IW1RMM CW Encoder turns a €10 ESP32 touchscreen board into a full-featured
-Morse code keyer. Plug in your paddle and key — everything else is on the touchscreen.
-
-Hardware: **ESP32-2432S028R** (CYD — Cheap Yellow Display), ILI9341 320×240
-colour touchscreen, XPT2046 resistive touch, built-in BLE, MicroSD slot.
-
----
-
-## Features
-
-### Keying & Paddle
-- Iambic A, Iambic B, Manual (straight key), Auto (electronic bug), Ultimatic
-- Real-time character decoding: every transmitted character appears on the scrolling display
-- Paddle swap (DIT/DAH) in one tap
-
-### Touchscreen Interface
-- LVGL-based UI — 5 tabs: Morse 1, Morse 2, SD, Settings, Spare
-- Interactive 4-point touch calibration on first boot, stored in NVS *(NEW v7.1.4)*
-- Scrolling text bars show transmitted text live
-- Virtual keyboard for message editing directly on screen
-
-### Speed & Timing
-- 5 to 100 WPM, adjustable on screen
-- DAH ratio (2.0–4.5×), spacing weight, Farnsworth character spacing
-- All values saved to non-volatile memory, restored on every boot
-
-### Preset Messages
-- 6 editable message slots: CQ, Name, Test, Ant/Rig, RST, Free
-- Send with one tap, edit via on-screen keyboard, stored permanently in NVS
-- Messages can be sent individually or chained
-
-### SD Card Player
-- Load any `.txt` file from MicroSD and transmit in Morse
-- PLAY / PAUSE / STOP — text scrolls live on display during transmission
-- Session logging to CSV with timestamp, WPM, frequency
-
-### Audio
-- Internal ESP32 DAC sidetone — 300 to 1200 Hz, 4 volume levels
-- No external audio hardware required
-
-### Wireless BLE Control
-- Nordic UART BLE service — control from any Android phone or PC *(FIX v7.1.3)*
-- K3NG ASCII command set over BLE: set speed, play memories, query status
-- Always available regardless of operating mode
-
-### Beacon & Contest
-- Beacon: automatic CQ at configurable intervals (10–600 s)
-- Contest: auto-incrementing serial number, saved to NVS
-
-### Special Modes
-- HSCW (60–100+ WPM) for meteor scatter and aurora
-- QRSS (3s, 6s, 10s, 30s per DIT) for low-power propagation experiments
-- Full prosign support: `<AR>` `<SK>` `<BT>` `<KN>` `<AS>` `<SN>`
-- Built-in clock — optional DS3231 RTC for persistent timekeeping
-
-### PC Integration (optional)
-- **WinKey 2.3** binary protocol at 1200 baud — for N1MM+, Win-Test, DXLog, Logger32
-- **K3NG serial** ASCII commands at 115200 baud via USB
-
-### Architecture
-- FreeRTOS: morseTask on Core 0, LVGL on Core 1
-- 1 kHz hardware timer for sub-millisecond keying accuracy
-- Non-blocking design throughout — no `delay()` in timing-critical paths
+Morse code keyer WinKey WK3-compliant per ESP32-2432S028R (CYD), con display ILI9341 320×240 touchscreen.
+Basato sul firmware originale di VK2IDL, esteso e adattato per il CYD.
 
 ---
 
 ## Hardware
 
-| Component | Detail |
-|---|---|
-| Board | ESP32-2432S028R (CYD) |
-| MCU | ESP32-D0WD dual-core 240 MHz · 520 KB RAM · 4 MB flash |
-| Display | ILI9341 2.8" TFT 320×240 · SPI (VSPI) |
-| Touch | XPT2046 resistive · SPI (HSPI) · 4-point calibrated |
-| KEY / PTT output | GPIO 27 · shared pin · HIGH = active |
-| Sidetone | GPIO 25 DAC · 300–1200 Hz |
-| Left paddle (DIT) | GPIO 35 |
-| Right paddle (DAH) | GPIO 22 |
-| SD card | HSPI · GPIO 18 / 19 / 23 / 5 |
-| Power | USB-C 5V · no external supply needed |
+### Schema elettrico
+
+![Schema elettrico del CW Keyer](images/schematic.jpg)
+
+### Collegamento paddle e tasto verticale
+
+![Collegamento plug tasto verticale e paddle — transistor 2N2222 TO-92 e TO-18](images/hardware_connections.jpg)
+
+### Vista interna dei collegamenti
+
+![Vista interna dei collegamenti](images/internal_wiring.jpg)
+
+### Vista d'insieme
+
+![Il CYD nel case con il paddle collegato](images/device_overview.jpg)
 
 ---
 
-## Installation
+## Funzionalità
 
-### 1. Install the ESP32 board package
+- WinKey WK3 via USB Serial (1200 baud)
+- K3NG ASCII command set via Serial e BLE Nordic UART
+- LVGL touchscreen UI (5 tab)
+- Modalità keyer: Iambic A/B, Bug, Auto, Ultimatic
+- SD card playback con logging CSV
+- QRSS / HSCW / Beacon / Contest
+- Calibrazione touch interattiva a 4 punti
+- Orologio con offset GMT, supporto DS3231 RTC
+- Farnsworth, Prosign, DAH ratio, Spacing weight
+- Memorie K3NG A–Z (NVS)
+- Messaggi preimpostati (6 slot, NVS)
 
-In Arduino IDE: **File → Preferences → Additional boards manager URLs**, add:
+---
 
-```
-https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-```
+## Interfaccia — Screenshots
 
-Then **Tools → Board → Boards Manager** → search `esp32` → install **esp32 by Espressif Systems**.
+### Tab Morse 1
 
-> **Requires ESP32 Arduino Core 3.x** — DacESP32 and BLE libraries require Core 3.x. Do not use 2.x.
+![Schermata Tab Morse 1](images/tab_morse1.jpg)
 
-### 2. Install required libraries
+### Keyboard — long press
 
-In Arduino IDE: **Sketch → Include Library → Manage Libraries**
+![Schermata Keyboard — long press sui tasti CQ, NAME ecc.](images/tab_keyboard.jpg)
 
-| Library | Version | Author | How to install |
-|---|---|---|---|
-| lvgl | **8.4.0** | LVGL | Library Manager → search `lvgl` |
-| TFT_eSPI | **2.5.43** | Bodmer | Library Manager → search `TFT_eSPI` |
-| XPT2046_Touchscreen | **1.4** | Paul Stoffregen | Library Manager → search `XPT2046` |
-| DacESP32 | **2.1.2** | Thomas Jentzsch | Library Manager → search `DacESP32` |
-| SD | built-in | Arduino | Built-in — no install needed |
-| SPI | built-in | Arduino | Built-in — no install needed |
-| Preferences | built-in | Espressif | Built-in with ESP32 Core |
-| BLEDevice / BLEServer / BLEUtils / BLE2902 | built-in | Espressif | Built-in with ESP32 Core |
-| esp_bt.h | built-in | Espressif | Built-in with ESP32 Core (ESP-IDF) |
+### Tab Morse 2
 
-### 3. Configure TFT_eSPI
+![Schermata Tab Morse 2](images/tab_morse2.jpg)
 
-Copy `docs/User_Setup_example.h` to your TFT_eSPI library folder
-(typically `Documents/Arduino/libraries/TFT_eSPI/`) and rename it `User_Setup.h`.
+### Tab SD
 
-```cpp
-#define ILI9341_DRIVER
-#define TFT_MISO  12    // ← must be defined, do NOT comment out
-#define TFT_MOSI  13
-#define TFT_SCLK  14
-#define TFT_CS    15
-#define TFT_DC     2
-#define TFT_RST   -1
-#define TOUCH_CS  -1
-#define SPI_FREQUENCY  40000000
-```
+![Schermata Tab SD](images/tab_sd.jpg)
 
-> **Important**: `TFT_MISO 12` must be defined and not commented out — the SD card will fail to initialise otherwise.
+### Tab Settings — stato di default
 
-### 4. Copy lv_conf.h
+![Schermata Tab Settings — stato di default](images/tab_settings.jpg)
 
-Copy `include/lv_conf.h` to your LVGL library folder
-(typically `Documents/Arduino/libraries/lvgl/`), replacing the existing file.
-This enables the fonts used by the UI — without it the sketch will not compile.
+### Tab Settings — con i tasti attivi
 
-### 5. Arduino IDE upload settings
+![Schermata Tab Settings — con i tasti attivi](images/tab_settings_active.jpg)
 
-| Setting | Value |
-|---|---|
-| Board | ESP32 Dev Module |
-| Flash Mode | **DIO** |
-| Flash Frequency | **40 MHz** |
-| Partition Scheme | Default 4MB with spiffs |
-| Upload Speed | 115200 |
+---
 
-> **DIO + 40 MHz are mandatory.** CYD boards often use ZBIT ZB25VQ32 flash chips
-> that are sensitive to faster or QIO settings — using QIO or 80 MHz will cause
-> upload failures or boot loops.
+## BLE
 
-### 6. Upload
+Il firmware espone un servizio Nordic UART (NUS) con nome **VK2IDL_Morse**.  
+Supporta lo stesso set di comandi K3NG disponibile via Serial.
 
-Open `IW1RMM_CW_Encoder/IW1RMM_CW_Encoder.ino` in Arduino IDE, select the correct
-COM port under **Tools → Port**, click **Upload**.
+### Comandi K3NG via BLE — screenshot smartphone
 
-On first boot, the **touch calibration wizard** starts automatically — touch each
-of the 4 corner crosshairs as instructed. Calibration is saved permanently and
-will not repeat on subsequent boots.
+![Screenshot smartphone — comandi K3NG via BLE](images/ble_smartphone.jpg)
 
-### Alternative: esptool
+---
 
+## Pinout ESP32-2432S028R (CYD)
+
+| GPIO | Funzione | Note |
+|------|----------|-------|
+| 27 | KEY / PTT output | Uscita keyer |
+| 26 | Sidetone DAC | Audio 300–1200 Hz |
+| 22 | DIT input | Paddle |
+| 21 | DAH input | Paddle |
+| 5 | SD_CS | SPI SD card |
+| 23 | SD_MOSI | SPI SD card |
+| 19 | SD_MISO | SPI SD card |
+| 18 | SD_SCK | SPI SD card |
+| 2 | TFT_RS | Display ILI9341 |
+| 15 | TFT_CS | Display ILI9341 |
+| 4 | XPT2046 CS | Touch |
+| 36 | XPT2046 IRQ | Touch interrupt |
+
+---
+
+## Dipendenze (librerie Arduino)
+
+- LVGL ≥ 8.x
+- TFT_eSPI
+- XPT2046_Touchscreen
+- ESP32 BLE Arduino
+- ESP32 Preferences (NVS)
+- SD (built-in)
+
+---
+
+## Installazione
+
+1. Clona il repository
 ```bash
-python -m esptool --chip esp32 --port COM4 --baud 115200 \
-  --before default-reset --after hard-reset \
-  write-flash -z --flash-mode dio --flash-freq 40m --flash-size detect \
-  0x10000 IW1RMM_CW_Encoder_v714.bin
+git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 ```
+2. Copia `include/lv_conf.h` nella cartella delle librerie LVGL
+3. Configura `User_Setup.h` di TFT_eSPI (vedi `docs/User_Setup_example.h`)
+4. Compila con Arduino IDE — board: **ESP32 Dev Module**  
+   In **Tools**, imposta:
+   - Flash Mode: **DIO**
+   - Flash Frequency: **40MHz**
+   - Partition Scheme: **Huge APP (3MB No OTA/1MB SPIFFS)**
+5. Upload via Arduino IDE — il firmware è di grandi dimensioni, **l'upload richiederà alcuni minuti** (large sketch upload time is expected).
 
-Replace `COM4` with your port (Linux: `/dev/ttyUSB0`, Mac: `/dev/cu.usbserial-*`).
-
----
-
-## K3NG Serial / BLE Commands (selection)
-
-| Command | Function |
-|---|---|
-| `\S nn` | Set speed (WPM) |
-| `\W nn` | Set weight |
-| `\F nn` | Set Farnsworth WPM |
-| `\Y nn` | Set sidetone frequency (Hz) |
-| `\M x text` | Store memory slot A–Z |
-| `\P x` | Play memory slot A–Z |
-| `\Z hh:mm:ss` | Set clock |
-| `\J` | Reset touch calibration |
-| `\X` | Toggle HSCW mode |
-| `\H` | Help — full command list |
-| `\V` | Firmware version |
-
-Full reference: see `docs/` folder.
+> **Nota:** I parametri Flash Mode DIO e Flash Frequency 40MHz sono necessari per compatibilità con il chip ZBIT presente in alcune unità CYD.
 
 ---
 
-## Version History
+## Comandi K3NG principali
 
-| Version | Changes |
-|---|---|
-| v7.1.4 | Interactive 4-point touch calibration, NVS namespace `touch_cal`, K3NG commands `\J \Y \X \E` |
-| v7.1.3 | BLE fix: device name now visible on Android scan |
-| v7.1.2 | MANUAL mode fix, prosign display, `mySet[]` extended to 121 elements (full ITU) |
-| v7.1.1 | FreeRTOS multi-task refactor, native BLEDevice |
-| v6.9.0 | Base version — VK2IDL original firmware, IW1RMM modifications begin |
-
----
-
-## 3D Printable Case
-
-The project includes a complete 3D printable enclosure for the CYD board.
-Files are in the `hardware/` folder — print with PLA or PETG, 0.2 mm layer height.
-
-| File | Part |
-|---|---|
-| [Case-Front_Panel.stl](hardware/Case-Front_Panel.stl) | Front panel |
-| [Case-Rear_Panel.stl](hardware/Case-Rear_Panel.stl) | Rear panel |
-| [Speaker-Cap.stl](hardware/Speaker-Cap.stl) | Speaker cap |
-| [Washer.stl](hardware/Washer.stl) | Washer |
-
-> GitHub renders STL files in 3D — click any file above to preview it in the browser.
+| Comando | Funzione |
+|---------|----------|
+| `\Snn` | Imposta velocità (WPM) |
+| `\Fnnnn` | Imposta frequenza sidetone (Hz) |
+| `\Ln` | Imposta livello volume (0–4) |
+| `\R nnn` | DAH ratio × 100 (es. \R300 = 3.0) |
+| `\W nnn` | Spacing weight × 100 (es. \W100 = 1.0) |
+| `\Y nn` | Farnsworth WPM (0 = disabilita) |
+| `\Q n` | QRSS (0/3/6/10/30 secondi per dit) |
+| `\T` | TUNE — portante continua |
+| `\J` | Reset calibrazione touch |
+| `\Z DDMMAAAAHHmmSS` | Imposta orologio |
+| `\G ±n` | Offset GMT |
+| `\PA testo` | Salva memoria K3NG (A–Z) |
+| `\MA` | Invia memoria K3NG A |
+| `\P` | Lista tutte le memorie |
+| `\?` | Help completo |
 
 ---
 
-## Credits
+## Versione
 
-- **Original firmware**: VK2IDL — foundational CW encoder design
-- **Development & extensions**: Mauri IW1RMM, 2025–2026
-- **K3NG keyer**: Anthony Good K3NG — [github.com/k3ng/k3ng_cw_keyer](https://github.com/k3ng/k3ng_cw_keyer)
-- **WinKey protocol**: K1EL — [k1el.com](https://www.k1el.com)
-- **LVGL**: [lvgl.io](https://lvgl.io)
-- **CYD community**: Brian Lough — [ESP32 Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
+| Versione | Data | Note |
+|----------|------|------|
+| v7.1.4 | 2026-03 | Touch calibration, prosign, DS3231, K3NG esteso |
 
 ---
 
-## License
+## Crediti
 
-This project is licensed under the **GNU General Public License v3.0**.
-See [LICENSE](LICENSE) for the full text.
+- Firmware originale: **VK2IDL**
+- Modifiche, estensioni e adattamento CYD: **IW1RMM (Mauri)**, 2025–2026
 
 ---
 
-*73 de IW1RMM — Mauri, Savona, Italy*
+## Licenza
+
+GPL v3 — vedi file `LICENSE`
