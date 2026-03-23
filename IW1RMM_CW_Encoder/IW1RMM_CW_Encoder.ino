@@ -1,13 +1,11 @@
 /*
- * VK2IDL CW Morse Encoder - LVGL Edition
- * Version: Version: 7.1.4  (sketch file: _714) - Touch calibration interactive
+ * IW1RMM CW Morse Encoder - LVGL Edition
+ * Version: Version: 7.1.5  (sketch file: _715) - Touch calibration interactive, ITA comments optimized
  * Hardware: ESP32 CYD (ESP32-2432S028R)
  * Display: ILI9341 320x240 with XPT2046 Touch
  *
- * 
- *
  * Modified by IW1RMM (Mauri) - 2026
- * Based on VK2IDL original workv7
+ * Based on VK2IDL "Ian" original work
  */
 
 #include <lvgl.h>
@@ -22,7 +20,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include "esp_bt.h"
-
+#include "nvs_flash.h"
 // BLE UUIDs per UART service (standard Nordic UART)
 #define BLE_SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define BLE_CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // RX dal client
@@ -48,7 +46,6 @@ DacESP32 dac1(GPIO_NUM_26);
 #define XPT2046_MISO 39
 #define XPT2046_CLK  25
 #define XPT2046_CS   33
-
 #define AUDIO_OUT    26
 #define PADDLE_DAH   22
 #define PADDLE_DIT   35
@@ -81,9 +78,8 @@ DacESP32 dac1(GPIO_NUM_26);
 // ============================================================================
 const int screenWidth  = 320;
 const int screenHeight = 240;
-const String VERSION   = "v7.1.4";
-const String TITLE     = "VK2IDL CW ENCODER";
-
+const String VERSION   = "v7.1.5";
+const String TITLE     = "IW1RMM CW ENCODER";
 const int MIN_WPM  = 5;
 const int MAX_WPM  = 100;
 const int MIN_FREQ = 300;
@@ -95,7 +91,7 @@ unsigned long lastClockUpdate = 0;
 #define toneVol4 DAC_CW_SCALE_8
 
 // ============================================================================
-// DISPLAY QUEUE  Ã¢â‚¬â€ messaggi da morseTask Ã¢â€ â€™ lvglTask
+// DISPLAY QUEUE messaggi da morseTask lvglTask
 // ============================================================================
 typedef enum {
   DISP_TX_LED = 0,   // payload: u8 (0=off, 1=on)
@@ -215,7 +211,6 @@ lv_obj_t *popupHscwSlider = NULL;    // Slider LVGL
 lv_obj_t *popupHscwLabel = NULL;     // Label valore
 // OROLOGIO
 lv_obj_t * ui_LabelClock = NULL; // Aggiungi questa riga in alto
-
 
 // Paddle state (solo morseTask scrive/legge)
 volatile int  LEFTpaddleState  = HIGH;
@@ -367,7 +362,7 @@ static const char mySet[] = {
 };
 static const int mySetSize = sizeof(mySet);
 
-// Stato morse (condivisi Ã¢â‚¬â€ usa LOCK)
+// Stato morse (condivisi - usa LOCK)
 String buffer       = "";
 bool   isTuneMode   = false;
 bool   isTxActive   = false;
@@ -475,22 +470,18 @@ uint8_t wkPinCfg         = 0x05; // 0x09 PinConfig default (PTT+Sidetone enable)
 bool txEnabled   = true;   // \X — TX key output enable/disable
 bool echoEnabled = false;  // \E — Echo paddle chars to Serial/BLE
 
-
 // Winkey buffer (per gestire messaggi parziali)
 #define WINKEY_BUF_SIZE 120
 uint8_t  winkeyBuf[WINKEY_BUF_SIZE];
 int      winkeyBufLen = 0;
 
-
-
-
 bool contestMode   = false;
 bool contestActive = false;
 
 // Display ticker a 3 righe (solo lvglTask/loop)
-// Ogni riga ÃƒÂ¨ larga MAX_COLS caratteri, riempita di spazi inizialmente
+// Ogni riga larga MAX_COLS caratteri, riempita di spazi inizialmente
 // I nuovi caratteri entrano da DESTRA, tutto scorre verso SINISTRA
-// Display scroll buffers Ã¢â‚¬â€ logica identica al vecchio sketch VK2IDL originale
+// Display scroll buffers logica identica al vecchio sketch VK2IDL originale
 // L3=barra blu (font grande), L2=nera bassa, L1=nera alta
 // drawRightString equivalente: label allineata a destra, testo cresce da sinistra
 String stringBuf_L3 = "";   // riga blu (attiva): max buffMainMax chars
@@ -562,41 +553,6 @@ int volumeUiLevel(int v) { return (v == 0) ? 0 : 5 - v; }
 // FUNCTION PROTOTYPES
 // ============================================================================
 void setupPins();
-
-
-// ============================================================================
-// [v56] CONFIGURAZIONE BUS SPI SUL CYD con ILI9341
-// ============================================================================
-// Fonte: GitHub TFT_eSPI issue #3706 (aprile 2025), JohannieK:
-//   "Con ILI9341 + XPT2046 il touch funziona SOLO su HSPI.
-//    Su VSPI si triggera con z=4096, x=0, y=0 continuamente."
-//
-// Il CYD ha 3 periferiche SPI con pin fisici dedicati:
-//   1. Display ILI9341  - pin 13/14/12/15 (MOSI/SCK/MISO/CS)
-//   2. Touch XPT2046    - pin 32/25/39/33 (MOSI/SCK/MISO/CS)
-//   3. SD Card          - pin 23/18/19/5  (MOSI/SCK/MISO/CS)
-//
-// Configurazione CORRETTA per ILI9341 (v56):
-//   TFT    -> VSPI (default TFT_eSPI, senza USE_HSPI_PORT)
-//   Touch  -> HSPI (touchSPI = SPIClass(HSPI), CS=33)
-//   SD     -> HSPI (sdSPI = SPIClass(HSPI), CS=5)
-//
-// Touch e SD condividono HSPI fisicamente ma con CS separati (33 vs 5):
-// il protocollo SPI serializza le transazioni via CS, nessun conflitto.
-//
-// User_Setup.h RICHIESTO:
-//   #define TFT_MISO  12  <- DEFINITA (non commentata)
-//   #define TFT_MOSI  13
-//   #define TFT_SCLK  14
-//   #define TFT_CS    15
-//   #define TFT_DC    2
-//   #define TFT_RST   -1
-//   #define TOUCH_CS  -1
-//   // NO USE_HSPI_PORT <- toglila se presente
-//   #define SPI_FREQUENCY  40000000
-// ============================================================================
-
-
 void setupTouch();
 void setupLVGL();
 void setupTasks();
@@ -620,7 +576,7 @@ void sdUpdateFileLabel();
 void sdUpdateInfoLabel();
 void sdUpdateWpmLabel();
 void sdUpdateButtons();
-void sdPlayerTask();    // chiamata da loop() Ã¢â‚¬â€ invia char al buffer Morse
+void sdPlayerTask();    // chiamata da loop() - invia char al buffer Morse
 void createTabSettings();
 void createTabSpare();
 void createLogAreas(lv_obj_t*);
@@ -740,11 +696,13 @@ class MyServerCallbacks : public BLEServerCallbacks {
     Serial.println("BLE: Client connected");
   }
   void onDisconnect(BLEServer *pServer) {
-    bleClientConnected = false;
-    bleUiUpdatePending = true;
-    Serial.println("BLE: Client disconnected");
-    if (bleEnabled) BLEDevice::startAdvertising();
+  bleClientConnected = false;
+  bleUiUpdatePending = true;
+  if (bleEnabled) {
+    delay(2000);
+    BLEDevice::startAdvertising();
   }
+ }
 };
 
 class MyCallbacks : public BLECharacteristicCallbacks {
@@ -759,8 +717,11 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 // SETUP
 // ============================================================================
 void setup() {
-  Serial1.end();   // â† aggiungi questa
+  Serial1.end();   // 
   Serial.begin(115200);
+  //nvs_flash_erase(); // decommentare per clean NVS one shot
+  //nvs_flash_init();// decommentare per clean NVS one shot
+  //delay(500);// decommentare per clean NVS one shot
   systemStartTime = millis();  // Marca tempo avvio per uptime
   delay(500);
  // SD PRIMA DI TUTTO - prima che tft.begin() occupi il bus
@@ -900,10 +861,6 @@ void loadPreferences() {
 
 }
 
-
-
-
-
 void setupTasks() {
   // morseTask su Core 0 separato da LVGL che gira nel loop() su Core 1
   xTaskCreatePinnedToCore(morseTask,  "MorseTask",  8192, NULL, 2, &morseTaskHandle,  0);//era 4096
@@ -912,7 +869,6 @@ void setupTasks() {
   // LVGL gira nel loop() Core 1 garantito da Arduino framework
   
 }
-
 
 void setupPins() {
   pinMode(MORSE_OUT, OUTPUT);
@@ -1126,9 +1082,6 @@ void runTouchCalibration() {
   }
 }
 
-
-
-
 void setupTouch() {
   // Carica da NVS se calibrato, altrimenti usa valori hardcoded di default
   if (!touchCalLoad(touch_x_min, touch_x_max, touch_y_min, touch_y_max)) {
@@ -1148,7 +1101,7 @@ void setupTouch() {
 
   Serial.println("Touch init OK (XPT2046_Touchscreen / VSPI)");
   bleSend("Touch init OK (XPT2046_Touchscreen / VSPI)\n");
-  // SD init spostata DOPO setupLVGL() Ã¢â‚¬â€ tft.begin() resetta SPI e rompe SD se init prima
+  // SD init spostata DOPO setupLVGL() - tft.begin() resetta SPI e rompe SD se init prima
   Serial.printf("  Cal: x %d-%d  y %d-%d\n",
                 touch_x_min, touch_x_max, touch_y_min, touch_y_max);
 }
@@ -1204,7 +1157,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
   if (touchscreen.tirqTouched() && touchscreen.touched()) {
     TS_Point p = touchscreen.getPoint();
-    // Mappa coordinate raw Ã¢â€ â€™ pixel schermo 320x240
+    // Mappa coordinate raw pixel schermo 320x240
     int screenX = map(p.x, touch_x_min, touch_x_max, 0, screenWidth);
     int screenY = map(p.y, touch_y_min, touch_y_max, 0, screenHeight);
     data->point.x = constrain(screenX, 0, screenWidth  - 1);
@@ -1522,7 +1475,7 @@ void createLogAreas(lv_obj_t *parent) {
 }
 
 void createTabSD() {
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Sfondo scuro + rimuovi padding LVGL (default ~8px che taglia a destra) Ã¢â€â‚¬Ã¢â€â‚¬
+  // Sfondo scuro + rimuovi padding LVGL (default ~8px che taglia a destra)
   lv_obj_set_style_bg_color(tabSD, lv_color_hex(0x0A0A1A), 0);
   lv_obj_set_style_bg_opa(tabSD, LV_OPA_COVER, 0);
   lv_obj_set_style_pad_all(tabSD, 0, 0);
@@ -1539,7 +1492,7 @@ void createTabSD() {
   //   Y=144 H=34  bottoni    (PLAY  PAUSE  STOP)
   //   FILE button: alto destra Y=2
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Info file Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Info file
   lv_obj_t *lblF = lv_label_create(tabSD);
   lv_label_set_text(lblF, "Nessun file");
   lv_obj_set_pos(lblF, 4, 2);
@@ -1549,7 +1502,7 @@ void createTabSD() {
   lv_obj_set_width(lblF, 244);
   lblSdFile = lblF;
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Info audio Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Info audio
   lv_obj_t *lblI = lv_label_create(tabSD);
   lv_label_set_text(lblI, "Freq:--- Vol:---");
   lv_obj_set_pos(lblI, 4, 18);
@@ -1557,7 +1510,7 @@ void createTabSD() {
   lv_obj_set_style_text_color(lblI, lv_color_hex(0x00FFFF), 0);
   lblSdInfo = lblI;
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Bottone FILE (alto destra, 4px dal bordo) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Bottone FILE (alto destra, 4px dal bordo)
   lv_obj_t *btnFile = lv_btn_create(tabSD);
   lv_obj_set_size(btnFile, 58, 30);
   lv_obj_set_pos(btnFile, 258, 2);
@@ -1571,7 +1524,7 @@ void createTabSD() {
   lv_obj_add_event_cb(btnFile, [](lv_event_t*e){ sdOpenFilePopup(); },
                       LV_EVENT_CLICKED, NULL);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Separatore Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Separatore
   lv_obj_t *sep = lv_obj_create(tabSD);
   lv_obj_set_size(sep, 318, 2);
   lv_obj_set_pos(sep, 0, 36);
@@ -1579,7 +1532,7 @@ void createTabSD() {
   lv_obj_set_style_border_width(sep, 0, 0);
   lv_obj_set_style_pad_all(sep, 0, 0);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Zona testo: 5 label fisse su tabSD Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Zona testo: 5 label fisse su tab SD
   // Niente container, niente WRAP, niente scroll.
   // 5 righe a Y fisso, LV_LABEL_LONG_CLIP, larghezza 316px.
   // sdLoadFile calcola le righe e le scrive direttamente.
@@ -1593,7 +1546,7 @@ void createTabSD() {
     lv_obj_set_width(lr, 316);
     lblSdRow[r] = lr;
   }
-  lblSdText = lblSdRow[0]; // compatibilitÃƒÂ 
+  lblSdText = lblSdRow[0]; // compatibilita
 
   // Speed bar
   lv_obj_t *btnSpM = lv_btn_create(tabSD);
@@ -1697,9 +1650,8 @@ void createTabSD() {
 }
 
 // ============================================================================
-// SD PLAYER Ã¢â‚¬â€ funzioni
+// SD PLAYER - funzioni
 // ============================================================================
-
 // Scansione file .txt sulla SD
 // Se targetFile != "" legge anche il contenuto di quel file
 void sdScanFiles(String targetFile) {
@@ -1717,7 +1669,7 @@ void sdScanFiles(String targetFile) {
         String clean = rawName.startsWith("/") ? rawName.substring(1) : rawName;
         sdFileList[sdFileCount] = clean;
         sdFileCount++;
-        // Se questo ÃƒÂ¨ il file da caricare, leggilo ora mentre ÃƒÂ¨ ancora aperto
+        // Se questo e il file da caricare, leggilo ora mentre e ancora aperto
         if (targetFile.length() > 0) {
           String targetClean = targetFile.startsWith("/") ? targetFile.substring(1) : targetFile;
           if (clean.equalsIgnoreCase(targetClean)) {
@@ -1741,14 +1693,14 @@ void sdScanFiles(String targetFile) {
   Serial.printf("SD: trovati %d file\n", sdFileCount);
 }
 
-// Carica testo da file SD Ã¢â‚¬â€ usa sdScanFiles per leggere il file
+// Carica testo da file SD usa sdScanFiles per leggere il file
 // evita SD.open() diretto che fallisce dopo LVGL init su CYD
 void sdLoadFile(String filename) {
   if (!sdAvailable) return;
   String clean = filename.startsWith("/") ? filename.substring(1) : filename;
   Serial.printf("sdLoadFile: [%s]\n", clean.c_str());
 
-  sdText = "";  // verrÃƒÂ  riempito da sdScanFiles se trova il file
+  sdText = "";  // verra riempito da sdScanFiles se trova il file
   sdScanFiles(clean);
 
   if (sdText.length() == 0) {
@@ -1785,8 +1737,6 @@ void sdLoadFile(String filename) {
   sdUpdateButtons();
   Serial.println("sdLoadFile: OK");
 }
-
-
 
 // Popup lista file
 void sdOpenFilePopup() {
@@ -1913,8 +1863,8 @@ void sdUpdateFileLabel() {
 // Aggiorna label info audio (freq + vol dallo sketch principale)
 void sdUpdateInfoLabel() {
   if (!lblSdInfo) return;
-  // Usa volumeUiLevel() Ã¢â‚¬â€ identico a come viene mostrato in Morse1/2
-  // volumeLevel=1Ã¢â€ â€™VOL4, volumeLevel=4Ã¢â€ â€™VOL1 (stessa inversione)
+  // Usa volumeUiLevel() identico a come viene mostrato in Morse1/2
+  // volumeLevel=1 VOL4, volumeLevel=4 VOL1 (stessa inversione)
   char buf[40];
   if (isMuted)
     snprintf(buf, sizeof(buf), "Freq:%d Hz  Vol:M", audioTone);
@@ -1950,9 +1900,9 @@ void sdUpdateButtons() {
     (sdState != SD_IDLE) ? lv_color_hex(0x770000) : lv_color_hex(0x333333), 0);
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ SD Player task Ã¢â‚¬â€ chiamato da loop() Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// SD Player task chiamato da loop()
 // Inietta caratteri nel buffer Morse uno alla volta solo quando il buffer
-// ÃƒÂ¨ vuoto (per non sovrapporre ad altri messaggi).
+// vuoto (per non sovrapporre ad altri messaggi).
 // La trasmissione avviene tramite morseTask (Core 0) esattamente come i tasti CQ.
 void sdPlayerTask() {
   if (sdState != SD_PLAYING) return;
@@ -1974,16 +1924,15 @@ void sdPlayerTask() {
     return;
   }
 
-  // Invia UN carattere Ã¢â‚¬â€ morseTask lo preleva e lo trasmette
+  // Invia UN carattere morseTask lo preleva e lo trasmette
   // esattamente come i tasti CQ/NAME ecc.
   char c = sdText.charAt(sdCharIndex);
   LOCK();
   buffer    += c;
-  isBufferMode = true;   // attiva modalitÃƒÂ  buffer come i tasti messaggio
+  isBufferMode = true;   // attiva modalità  buffer come i tasti messaggio
   UNLOCK();
   sdCharIndex++;
 }
-
 
 // ============================================================================
 // FARNSWORTH UI - createTabSettings modificato + popup + event handlers
@@ -1992,7 +1941,7 @@ void sdPlayerTask() {
 void createTabSettings() {
   // Header compatto
   lv_obj_t *lT = lv_label_create(tabSettings);
-  lv_label_set_text(lT, "VK2IDL CW ENCODER"); 
+  lv_label_set_text(lT, "IW1RMM CW ENCODER"); 
   lv_obj_set_pos(lT, 10, 5);
   lv_obj_set_style_text_font(lT, &lv_font_montserrat_12, 0);
 
@@ -2087,11 +2036,6 @@ void createTabSettings() {
   lv_obj_add_event_cb(btnBle, onBleToggle, LV_EVENT_CLICKED, NULL);
 
 } // Fine funzione
-
-
- 
-
-
 
 // Event handler Farnsworth toggle
 void onFarnsworthToggle(lv_event_t *e) {
@@ -2282,7 +2226,7 @@ void sdLogInit() {
   
   // Scrivi header se file nuovo
   if (logFile.size() == 0) {
-    logFile.println("=== VK2IDL Morse Encoder Log ===");
+    logFile.println("=== IW1RMM Morse Encoder Log ===");
     logFile.printf("Session started: uptime %s\n", getUptimeString().c_str());
     logFile.println();
   } else {
@@ -2578,7 +2522,7 @@ void onQrssToggle(lv_event_t *e) {
 static volatile bool bleSetupDone = false;
 
 void bleSetupTask(void *param) {
-  BLEDevice::init("VK2IDL_Morse");
+  BLEDevice::init("CW_Encoder");
   bleServer = BLEDevice::createServer();
   bleServer->setCallbacks(new MyServerCallbacks());
 
@@ -2601,7 +2545,7 @@ void bleSetupTask(void *param) {
 }
 
 void bleSetup() {
-  xTaskCreatePinnedToCore(bleSetupTask, "BLESetup", 8192, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(bleSetupTask, "BLESetup", 8192, NULL, 5, NULL, 1);// ERA 8192, NULL, 1, NULL, 1
 }
 void bleStop() {
   if (!bleEnabled) return;
@@ -2637,7 +2581,7 @@ void bleInit() {
   
   // Imposta nome nel payload advertising principale (non solo scan response)
   BLEAdvertisementData advData;
-  advData.setName("VK2IDL_Morse");// ← nome nel pacchetto primario
+  advData.setName("CW_Encoder");// ← nome nel pacchetto primario
   advData.setFlags(0x06);// LE General Discoverable + BR/EDR not supported
   adv->setAdvertisementData(advData);
   
@@ -3077,8 +3021,6 @@ void checkSerialBle() {
   }
 }
 
-
-
 void createTabSpare() {
   lv_obj_t *label = lv_label_create(tabSpare);
   lv_label_set_text(label, "Spare Tab\n(Reserved for future features)");
@@ -3086,7 +3028,7 @@ void createTabSpare() {
 }
 
 // ============================================================================
-// DISPLAY QUEUE PROCESSING  Ã¢â‚¬â€  [FIX-1] chiamato SOLO dal lvglTask (Core 0)
+// DISPLAY QUEUE PROCESSING [FIX-1] chiamato SOLO dal lvglTask (Core 0)
 // ============================================================================
 void processDisplayQueue() {
   DisplayMsg m;
@@ -3198,18 +3140,18 @@ void lvgl_updateTxLed(bool on) {
   if (ledTxCircle2) lv_obj_set_style_bg_color(ledTxCircle2, col, 0);
 }
 
-// Appende un carattere al ticker Ã¢â‚¬â€ logica identica a LCDprint_Char del vecchio sketch
+// Appende un carattere al ticker logica identica a LCDprint_Char del vecchio sketch
 // L3 = barra blu (attiva, max buffMainMax=22 chars, allineata a destra)
 // L2 = nera bassa (overflow di L3, max buffSecMax=42)
 // L1 = nera alta  (overflow di L2, max buffSecMax=42)
-// Quando L3 ÃƒÂ¨ piena: char[0] di L3 -> L2, char[0] di L2 -> L1, L3 shift+append
+// Quando L3 piena: char[0] di L3 -> L2, char[0] di L2 -> L1, L3 shift+append
 void lvgl_appendTxBar(char c) {
   if ((int)stringBuf_L3.length() == buffMainMax) {
-    // L3 piena: propaga il carattere piÃƒÂ¹ vecchio verso l'alto
+    // L3 piena: propaga il carattere piu vecchio verso l'alto
     if ((int)stringBuf_L2.length() == buffSecMax) {
       // Anche L2 piena
       if ((int)stringBuf_L1.length() == buffSecMax) {
-        // Anche L1 piena: scarta il piÃƒÂ¹ vecchio di L1
+        // Anche L1 piena: scarta il piu vecchio di L1
         stringBuf_L1 = stringBuf_L1.substring(1, buffSecMax);
         stringBuf_L1 = stringBuf_L1 + stringBuf_L2.substring(0, 1);
       } else {
@@ -3262,7 +3204,7 @@ void updateStatusLabels() {
   }
   lv_label_set_text_fmt(labelFreq1, "FRQ:%d", audioTone);
   lv_label_set_text_fmt(labelFreq2, "FRQ:%d", audioTone);
-  // Aggiorna anche tab SD Ã¢â‚¬â€ freq e vol sono cambiati
+  // Aggiorna anche tab SD freq e vol sono cambiati
   sdUpdateInfoLabel();
   sdUpdateWpmLabel();
 }
@@ -3439,7 +3381,7 @@ void onClear(lv_event_t *e) {
 
 void onKeyerMode(lv_event_t *e) {
   // Solo informativo - mostra stato corrente, nessun toggle manuale
-  // Lo stato ÃƒÂ¨ gestito automaticamente da addToBuffer e clearBuffer
+  // Lo stato gestito automaticamente da addToBuffer e clearBuffer
 }
 
 void onTune(lv_event_t *e) {
@@ -3511,10 +3453,8 @@ void onProtocolToggle(lv_event_t *e) {
   }
 }
 
-
-
 // ============================================================================
-// POPUP BEACON / CONTEST Ã¢â‚¬â€ gestori press/release
+// POPUP BEACON / CONTEST gestori press/release
 // ============================================================================
 static unsigned long beaconPressTime_btn = 0;
 static bool beaconBtnDown = false;
@@ -3557,7 +3497,7 @@ void onContest(lv_event_t *e) {
     unsigned long now  = millis();
 
     if (held >= 1000) {
-      // Ã¢â€â‚¬Ã¢â€â‚¬ LONG PRESS >1s: invia RST + numero e incrementa Ã¢â€â‚¬Ã¢â€â‚¬
+      // LONG PRESS >1s: invia RST + numero e incrementa
       contestTapCount = 0;
       sendContestMsg();
       LOCK();
@@ -3571,12 +3511,12 @@ void onContest(lv_event_t *e) {
       Serial.printf("Contest TX sent, next=%d\n", cc);
 
     } else if (held >= 400) {
-      // Ã¢â€â‚¬Ã¢â€â‚¬ PRESS 400-1000ms: apri popup setting Ã¢â€â‚¬Ã¢â€â‚¬
+      // PRESS 400-1000ms: apri popup setting
       contestTapCount = 0;
       showPopupContest();
 
     } else {
-      // Ã¢â€â‚¬Ã¢â€â‚¬ SHORT TAP <400ms: conta per doppio tocco Ã¢â€â‚¬Ã¢â€â‚¬
+      // SHORT TAP <400ms: conta per doppio tocco
       if (now - contestLastRelease < 400) {
         // Secondo tocco rapido = RESET
         contestTapCount = 0;
@@ -3664,7 +3604,6 @@ void onMsgEditorSave(lv_event_t *e) {
   if (msgEditorBox) { lv_obj_del(msgEditorBox); msgEditorBox = NULL; msgEditorTA = NULL; }
 }
 
-
 void onMsgEditorCancel(lv_event_t *e) {
   if (msgEditorKb)  { lv_obj_del(msgEditorKb);  msgEditorKb=NULL; }
   if (msgEditorBox) { lv_obj_del(msgEditorBox); msgEditorBox=NULL; msgEditorTA=NULL; }
@@ -3681,9 +3620,8 @@ void showMsgEditor(int idx) {
 
   String current = (idx>=0 && idx<6) ? *msgs[idx] : "";
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   // Overlay fullscreen 320x240
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  
   lv_obj_t *overlay = lv_obj_create(lv_scr_act());
   lv_obj_set_size(overlay, 320, 240);
   lv_obj_set_style_bg_color(overlay, lv_color_hex(0x0A0A1A), 0);
@@ -3753,9 +3691,9 @@ void showMsgEditor(int idx) {
   lv_obj_add_event_cb(btnCnl, onMsgEditorCancel,
                       LV_EVENT_CLICKED, NULL);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  
   // Tastiera 4 righe compatta
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+ 
   lv_obj_t *kb = lv_keyboard_create(overlay);
   lv_obj_set_width(kb, 320);
   lv_obj_set_height(kb, 150);
@@ -4014,7 +3952,7 @@ void showPopupContest() {
 }
 
 // ============================================================================
-// MORSE LOGIC  Ã¢â‚¬â€  tutto in morseTask (Core 1); NESSUNA chiamata lv_*
+// MORSE LOGIC  tutto in morseTask (Core 1); NESSUNA chiamata lv_*
 // ============================================================================
 
 void addToBuffer(String msg) {
@@ -4045,7 +3983,6 @@ void morseToneOn(int ms) {
   dac1.disable();
   postDisplay(DISP_TX_LED, 0);
 }
-
 
 void morseToneOff(int ms) {
   morseDelay(ms);
@@ -4145,9 +4082,6 @@ void sendProsign(const String &code) {
   String disp = "<" + code + ">";
   for (int i = 0; i < disp.length(); i++) postDisplayChar(disp.charAt(i));
 }
-
-
-
 
 void sendMorseChar(char c) {
   c = toupper(c);
@@ -4260,13 +4194,13 @@ void paddleTimer() {
     dahOnFlag=false;
 }
 
-// Decodifica paddle Ã¢â‚¬â€ identico a printDitDah() del vecchio sketch
+// Decodifica paddle identico a printDitDah() del vecchio sketch
 // Chiamata ogni ciclo morseTask; usa timing reale dit/dah per decodifica
 void printDitDah() {
   LOCK(); float dLen = ditLength; UNLOCK();
   unsigned long elementL = (unsigned long)dLen;  // lunghezza dit in ms
 
-  // Se il carattere ÃƒÂ¨ pronto e non c'ÃƒÂ¨ tono in corso
+  // Se il carattere  pronto e non c'e tono in corso
   if (paddleChar && !ditToneFlag && !dahToneFlag) {
     paddleInTime = millis();
     if ((paddleInTime - paddleOutTime) >= elementL * 2) {
@@ -4409,7 +4343,7 @@ void checkSerial() {
     checkSerialWinkey();
     return;
   } 
-  // ModalitÃ  K3NG (originale)
+  // Modalita K3NG (originale)
 
   while (Serial.available() > 0) {
     char c = Serial.read();
@@ -4638,8 +4572,6 @@ void checkSerial() {
           break;
         }
 
-
-
         // --- PROGRAM MEMORY (\PA<testo> = salva testo in memoria A) ---
         case 'P': {
           if (param.length() >= 1) {
@@ -4710,7 +4642,6 @@ void checkSerial() {
       }
           //         - aggiungere nel case switch di checkSerial()
 // ============================================================================
-
 // Inserire questo case dopo gli altri comandi in checkSerial():
 
         // --- FARNSWORTH WPM (\\Ynn = set effective WPM, \\Y0 = disable) ---
@@ -4831,12 +4762,6 @@ void checkSerial() {
           break;
         }
 
-
-
-
-
-
-
         // --- HELP ---
         case 'H': sendHelp(); break;
 
@@ -4904,7 +4829,6 @@ void sendStatus() {
   Serial.print(buf);
   Serial.flush();   // attende che il buffer TX sia svuotato prima di continuare
 }
-
 
 void sendHelp() {
   Serial.println("\n=== K3NG Commands ===");
@@ -5007,6 +4931,7 @@ void winkeyUpdateStatus() {
 //   Bit 1: Autospace
 //   Bit 0: CT spacing
 // ---------------------------------------------------------------------------
+
 static void winkeyApplyModeReg(uint8_t reg) {
   winkeyModeReg = reg;
   uint8_t keyerMode = (reg >> 4) & 0x03;  // bit 5,4
@@ -5468,8 +5393,6 @@ void checkSerialWinkey() {
   }
 }
 
-
-
 // ============================================================================
 // TASKS
 // ============================================================================
@@ -5634,7 +5557,7 @@ void updateClockLVGL() {
 }
 // ============================================================================
 // MAIN LOOP LVGL gira qui, su Core 1 garantito da Arduino framework
-// Questo ÃƒÂ¨ l'unico posto sicuro per lv_timer_handler() e processDisplayQueue()
+// Questo e l'unico posto sicuro per lv_timer_handler() e processDisplayQueue()
 // perché setup() crea tutti gli oggetti LVGL su Core 1 (loopTask Arduino)
 // ============================================================================
 void loop() {
@@ -5675,5 +5598,5 @@ if (bleLogDisabledPending) {
     lastClockUpdate = millis();
     updateClockLVGL();
   }
-  delay(5);                // 5ms Ã¢â‚¬â€ valore raccomandato LVGL
+  delay(5);                // 5ms valore raccomandato LVGL
 }
