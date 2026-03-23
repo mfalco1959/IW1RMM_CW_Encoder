@@ -1,6 +1,6 @@
 # IW1RMM CW Encoder
 
-**Firmware v7.1.4 — IW1RMM (Mauri)**
+**Firmware v7.1.5 — IW1RMM (Mauri)**
 
 WinKey WK3-compliant Morse code keyer for the ESP32-2432S028R (CYD), with ILI9341 320×240 touchscreen display.
 Based on the original firmware by VK2IDL, extended and adapted for the CYD platform.
@@ -164,6 +164,7 @@ git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 
 | Version | Date | Notes |
 |---------|------|-------|
+| v7.1.5 | 2026-03 | Code comments optimised, reduced code lines. Minor text adjustments. |
 | v7.1.4 | 2026-03 | Touch calibration, prosign, DS3231, extended K3NG |
 
 ---

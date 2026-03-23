@@ -1,6 +1,6 @@
 # IW1RMM CW Encoder
 
-**Firmware v7.1.4 — IW1RMM (Mauri)**
+**Firmware v7.1.5 — IW1RMM (Mauri)**
 
 Morse code keyer WinKey WK3-compliant per ESP32-2432S028R (CYD), con display ILI9341 320×240 touchscreen.
 Basato sul firmware originale di VK2IDL, esteso e adattato per il CYD.
