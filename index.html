@@ -128,6 +128,7 @@ footer a{color:var(--accent2);text-decoration:none}
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
     <li><a href="#hardware">Hardware</a></li>
+    <li><a href="#rtc">RTC Upgrade</a></li>
     <li><a href="#versions">Versions</a></li>
     <li><a href="#install">Install</a></li>
     <li><a href="#docs">Docs</a></li>
@@ -139,7 +140,7 @@ footer a{color:var(--accent2);text-decoration:none}
 
 <div class="hero">
   <div class="hero-text">
-    <p class="hero-eyebrow">Firmware v7.1.5 &nbsp;·&nbsp; ESP32 CYD &nbsp;·&nbsp; Open Source</p>
+    <p class="hero-eyebrow">Firmware v7.2.1 &nbsp;·&nbsp; ESP32 CYD &nbsp;·&nbsp; Open Source</p>
     <h1>A complete<br><em>CW Keyer</em><br>in your hand.</h1>
     <p class="hero-desc">
       The IW1RMM CW Encoder turns a &euro;10 ESP32 touchscreen board into a
@@ -161,7 +162,7 @@ footer a{color:var(--accent2);text-decoration:none}
     <div class="cyd-mockup">
       <div class="cyd-top">
         <span class="cyd-title">IW1RMM CW ENCODER</span>
-        <span class="cyd-ver">v7.1.5</span>
+        <span class="cyd-ver">v7.2.1</span>
       </div>
       <div class="cyd-row"><span>Mode</span><span class="cyd-val yellow">IAMBIC B</span></div>
       <div class="cyd-row"><span>Speed</span><span class="cyd-val">22 WPM</span></div>
@@ -245,7 +246,7 @@ footer a{color:var(--accent2);text-decoration:none}
     <div class="sec-card"><h3>&#9889; HSCW</h3><p>High Speed CW (60&ndash;100+ WPM) for meteor scatter and aurora contacts.</p></div>
     <div class="sec-card"><h3>&#128300; QRSS</h3><p>Ultra-slow CW (3s, 6s, 10s, 30s per DIT) for low-power propagation experiments and QRSS grabbers.</p></div>
     <div class="sec-card"><h3>&#10022; Prosign Support</h3><p>Full prosign set: &lt;AR&gt; &lt;SK&gt; &lt;BT&gt; &lt;KN&gt; &lt;AS&gt; &lt;SN&gt; &mdash; sent without inter-character space, per ITU standard.</p></div>
-    <div class="sec-card"><h3>&#128336; Clock</h3><p>Built-in digital clock on display. Optional DS3231 RTC for persistent timekeeping across reboots.</p></div>
+    <div class="sec-card"><h3>&#128336; Clock</h3><p>Built-in digital clock on display. Miniature DS3231SN RTC (v7.2.1): hardware timekeeping with a working backup battery, read at boot and set/read via <code>\Z</code>. <a href="#rtc">Installation and wiring guide</a>.</p></div>
     <div class="sec-card"><h3>&#128190; SD Logging</h3><p>All transmitted characters logged to CSV with timestamp, WPM, frequency and session metadata.</p></div>
     <div class="sec-card"><h3>&#128268; Paddle Swap</h3><p>Swap DIT and DAH in one tap. For left-handed operators or reversed cables.</p></div>
     <div class="sec-card"><h3>&#128279; WinKey WK3</h3><p>Full WinKey 2.3 binary protocol at 1200 baud for N1MM+, Win-Test, DXLog and other logging software.</p></div>
@@ -272,7 +273,35 @@ footer a{color:var(--accent2);text-decoration:none}
     <tr><td>SD card</td><td>HSPI &middot; GPIO 18 / 19 / 23 / 5</td></tr>
     <tr><td>Power</td><td>USB-C 5V &middot; no external supply needed</td></tr>
     <tr><td>Wireless</td><td>BLE 4.2 integrated &middot; Wi-Fi available for future use</td></tr>
+    <tr><td>RTC (v7.2.1)</td><td>Miniature DS3231SN &middot; I&sup2;C SDA GPIO16 / SCL GPIO17 &middot; 4-wire retrofit &middot; <a href="#rtc">hardware guide IT / EN</a></td></tr>
   </table>
+</section>
+
+<hr class="divider">
+
+<section id="rtc">
+  <p class="section-label">New in v7.2.1 &middot; Hardware modification / Modifica hardware</p>
+  <h2>DS3231SN Real-Time Clock</h2>
+  <p class="section-intro">A miniature 10 &times; 10 mm RTC module keeps time when the CYD is powered off <strong>provided the RTC has a working backup battery or backup supply</strong>. This retrofit requires soldering and removal of two resistors on the specific CYD PCB shown below.</p>
+  <figure style="max-width:780px;margin:1.2rem 0 1.8rem;">
+    <a href="IW1RMM_CW_Encoder/docs/images/RTC_DS3231_CYD_collegamenti.png" target="_blank" rel="noopener noreferrer" title="Open full-size installation drawing">
+      <img src="IW1RMM_CW_Encoder/docs/images/RTC_DS3231_CYD_collegamenti.png" alt="IW1RMM RTC retrofit drawing: miniature DS3231SN module, R16 and R20 removed, RGB LED kept in place, four soldered wires" style="display:block;max-width:100%;height:auto;border:1px solid var(--rule);border-radius:6px;background:#fff;" loading="lazy">
+    </a>
+    <figcaption style="font-size:.78rem;color:var(--ink-faint);margin-top:.5rem;">Author's installation drawing / Disegno dell'autore &mdash; CYD PCB revision as illustrated.</figcaption>
+  </figure>
+  <div class="core-grid">
+    <div class="core-card">
+      <h3>Italiano &middot; Modifica al CYD</h3>
+      <p>Rimuovere <strong>R16 e R20</strong>, <strong>senza rimuovere il LED RGB</strong>. Fissare sul retro il minuscolo modulo DS3231SN e collegare quattro fili: alimentazione (+), GND (&minus;), SDA/DATA (GPIO16) e SCL/CLOCK (GPIO17), seguendo i punti indicati nel disegno. Verificare tensione e batteria di backup prima dell'alimentazione.</p>
+      <p style="margin-top:.9rem;"><a href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLAZIONE.md">Guida completa all'installazione (IT) &rarr;</a></p>
+    </div>
+    <div class="core-card">
+      <h3>English &middot; CYD RTC retrofit</h3>
+      <p><strong>Remove R16 and R20</strong>; <strong>leave the RGB LED mounted</strong>. Mount the tiny DS3231SN on the rear of the CYD and solder four wires: VCC (+), GND (&minus;), SDA/DATA (GPIO16), and SCL/CLOCK (GPIO17), at the points shown. Check supply voltage and RTC battery backup before powering on.</p>
+      <p style="margin-top:.9rem;"><a href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLATION_EN.md">Full installation guide (EN) &rarr;</a></p>
+    </div>
+  </div>
+  <p class="section-intro" style="margin-bottom:0;"><strong>Firmware v7.2.1:</strong> the ESP32 synchronizes its clock from DS3231 at startup. Use <code>\Z</code> to query RTC time or <code>\ZDDMMYYYYHHMMSS</code> to set it via Serial/BLE. The hardware modification is board-revision-specific.</p>
 </section>
 
 <hr class="divider">
@@ -283,11 +312,14 @@ footer a{color:var(--accent2);text-decoration:none}
   <table class="ver-table">
     <tr><th>Version</th><th>Changes</th></tr>
     <tr class="current">
+      <td><span class="vtag">v7.2.1</span></td>
+      <td>Miniature DS3231SN RTC integration: I&sup2;C GPIO16/17, RTC-to-system-clock sync on boot, serial/BLE <code>\Z</code> query and setting, clock reliability fixes. <a href="#rtc">Retrofit instructions IT / EN</a>. <span class="badge badge-new">LATEST</span></td></tr>
+    <tr>
       <td><span class="vtag">v7.1.5</span></td>
       <td>Code comments optimised, reduced code lines. Minor text adjustments.</td></tr>
     <tr>
       <td><span class="vtag">v7.1.4</span></td>
-      <td>Interactive 4-point touch calibration. Separate NVS namespace <code>touch_cal</code>. Serial escape, timeout and fallback protection. New K3NG commands <code>\J \Y \X \E</code>. <span class="badge badge-new">LATEST</span></td>
+      <td>Interactive 4-point touch calibration. Separate NVS namespace <code>touch_cal</code>. Serial escape, timeout and fallback protection. New K3NG commands <code>\J \Y \X \E</code>.</td>
     </tr>
     <tr><td><span class="vtag">v7.1.3</span></td><td>BLE fix: device name now visible on Android BLE scan. Name set in primary advertising payload; service UUID moved to scan response.</td></tr>
     <tr><td><span class="vtag">v7.1.2</span></td><td>MANUAL mode fix: characters now displayed on text bars. mySet[] extended to 121 elements (full ITU punctuation + prosigns). Prosign display: &lt;AR&gt; &lt;BT&gt; &lt;SK&gt; etc.</td></tr>
@@ -328,6 +360,7 @@ footer a{color:var(--accent2);text-decoration:none}
         <tr><td>DacESP32</td><td><strong>2.1.2</strong></td><td>Thomas Jentzsch</td><td>Library Manager &rarr; search <code>DacESP32</code></td></tr>
         <tr><td>SD</td><td>built-in</td><td>Arduino</td><td>Built-in &mdash; no install needed</td></tr>
         <tr><td>SPI</td><td>built-in</td><td>Arduino</td><td>Built-in &mdash; no install needed</td></tr>
+         <tr><td>Wire (DS3231)</td><td>built-in</td><td>Espressif</td><td>Included with ESP32 Core; RTClib not required</td></tr>
         <tr><td>Preferences (NVS)</td><td>built-in</td><td>Espressif</td><td>Built-in with ESP32 Core</td></tr>
         <tr><td>BLEDevice / BLEServer / BLEUtils / BLE2902</td><td>built-in</td><td>Espressif</td><td>Built-in with ESP32 Core</td></tr>
         <tr><td>esp_bt.h</td><td>built-in</td><td>Espressif</td><td>Built-in with ESP32 Core (ESP-IDF)</td></tr>
@@ -375,10 +408,15 @@ footer a{color:var(--accent2);text-decoration:none}
       <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">&#128161; <strong>Upload speed:</strong> 115200 baud is the safe recommended value. If you plan to upload only occasionally, you may try increasing the speed (e.g. 460800 or 921600) to reduce upload time, but stability depends on your USB cable and PC driver.</p>
     </div></div>
 
+    <div class="install-step"><div class="step-num">RTC</div><div>
+      <h3>Optional DS3231SN hardware retrofit (v7.2.1)</h3>
+      <p>Before using the persistent RTC clock, follow the <a href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLAZIONE.md">Italian installation guide</a> or <a href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLATION_EN.md">English installation guide</a>. The retrofit needs four wires, R16 and R20 removed, and the RGB LED left in place. Use the supplied drawing to identify solder points. A backup battery is needed for off-power timekeeping.</p>
+    </div></div>
+
     <div class="install-step"><div class="step-num">7</div><div>
       <h3>Open the sketch and upload</h3>
       <p>Open <code>IW1RMM_CW_Encoder/IW1RMM_CW_Encoder.ino</code> in Arduino IDE.
-      Connect the CYD via USB-C. Select the correct COM port under <strong>Tools &rarr; Port</strong>.
+      Use the v7.2.1 sketch in the <code>IW1RMM_CW_Encoder</code> folder. Connect the CYD via USB-C. Select the correct COM port under <strong>Tools &rarr; Port</strong>.
       Click <strong>Upload</strong>.</p>
       <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">On first boot, the touch calibration wizard will start automatically.
       Follow the on-screen instructions to touch each of the 4 corner crosshairs.
@@ -387,11 +425,11 @@ footer a{color:var(--accent2);text-decoration:none}
 
     <div class="install-step"><div class="step-num">8</div><div>
       <h3>Alternative: flash precompiled binary with esptool</h3>
-      <p>If you prefer not to use Arduino IDE, flash the precompiled <code>.bin</code> directly:</p>
+      <p>If an <strong>individually verified</strong> v7.2.1 application <code>.bin</code> is available, you can flash it with esptool. No v7.2.1 binary is included in this update package. Do <strong>not</strong> use the old v7.1.4 binary as if it were v7.2.1:</p>
       <pre>python -m esptool --chip esp32 --port COM4 --baud 115200 \
   --before default-reset --after hard-reset \
   write-flash -z --flash-mode dio --flash-freq 40m \
-  --flash-size detect 0x10000 IW1RMM_CW_Encoder_v714.bin</pre>
+  --flash-size detect 0x10000 YOUR_VERIFIED_v721_APP.bin</pre>
       <p style="margin-top:.4rem; font-size:.82rem; color:var(--ink-faint);">Replace <code>COM4</code> with your actual port (Linux: <code>/dev/ttyUSB0</code>, Mac: <code>/dev/cu.usbserial-*</code>).</p>
     </div></div>
 
@@ -431,9 +469,11 @@ footer a{color:var(--accent2);text-decoration:none}
   <h2>Reference Documents</h2>
   <div class="docs-grid">
     <a class="doc-card" href="IW1RMM_CW_Encoder/docs/CYD_Device_and_Functions_CW_Encoder_EN.pdf"><div class="doc-icon">&#128216;</div><div><h3>Device &amp; Features Guide</h3><span>English &middot; PDF</span></div></a>
-    <a class="doc-card" href="IW1RMM_CW_Encoder/docs/CYD_Device_e_Funzioni_CW_Encoder_IT.pdf"><div class="doc-icon">&#128216;</div><div><h3>Guida Dispositivo e Funzioni</h3><span>Italiano &middot; PDF</span></div></a>
+    <a class="doc-card" href="IW1RMM_CW_Encoder/docs/CYD_Device_e_Funzioni_CW_Encoder_v714_IT.pdf"><div class="doc-icon">&#128216;</div><div><h3>Guida Dispositivo e Funzioni</h3><span>Italiano &middot; PDF</span></div></a>
     <a class="doc-card" href="IW1RMM_CW_Encoder/docs/IW1RMM_v714_Software_Routine_Analysis_EN.pdf"><div class="doc-icon">&#128217;</div><div><h3>Software Routine Analysis</h3><span>English &middot; PDF &middot; v7.1.4</span></div></a>
-    <a class="doc-card" href="IW1RMM_CW_Encoder/docs/VK2IDL_v69_Analisi_Routine_SW_IT.pdf"><div class="doc-icon">&#128217;</div><div><h3>Analisi Routine Software</h3><span>Italiano &middot; PDF &middot; v6.9.0</span></div></a>
+    <a class="doc-card" href="IW1RMM_CW_Encoder/docs/IW1RMM_v714_Analisi_Routine_SW_IT.pdf"><div class="doc-icon">&#128217;</div><div><h3>Analisi Routine Software</h3><span>Italiano &middot; PDF &middot; v6.9.0</span></div></a>
+     <a class="doc-card" href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLAZIONE.md"><div class="doc-icon">&#128336;</div><div><h3>Installazione RTC DS3231SN</h3><span>Italiano &middot; v7.2.1 &middot; diagramma</span></div></a>
+     <a class="doc-card" href="IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLATION_EN.md"><div class="doc-icon">&#128336;</div><div><h3>DS3231SN RTC Installation</h3><span>English &middot; v7.2.1 &middot; wiring drawing</span></div></a>
     <a class="doc-card" href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank"><div class="doc-icon">&#9881;&#65039;</div><div><h3>Source Code</h3><span>GitHub Repository</span></div></a>
   </div>
 </section>
@@ -454,7 +494,7 @@ footer a{color:var(--accent2);text-decoration:none}
 </section>
 
 <footer>
-  <p>IW1RMM CW Encoder &nbsp;&middot;&nbsp; v7.1.5 &nbsp;&middot;&nbsp;
+  <p>IW1RMM CW Encoder &nbsp;&middot;&nbsp; v7.2.1 &nbsp;&middot;&nbsp;
   <a href="https://github.com/mfalco1959/IW1RMM_CW_Encoder" target="_blank">GitHub</a>
   &nbsp;&middot;&nbsp;
   <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">GPL v3</a>

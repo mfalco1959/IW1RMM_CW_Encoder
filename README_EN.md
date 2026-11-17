@@ -1,7 +1,7 @@
 # IW1RMM CW Encoder
 Live demo:  
 https://mfalco1959.github.io/IW1RMM_CW_Encoder/
-**Firmware v7.1.5 — IW1RMM (Mauri)**
+**Firmware v7.2.1 — IW1RMM (Mauri)**
 
 WinKey WK3-compliant Morse code keyer for the ESP32-2432S028R (CYD), with ILI9341 320×240 touchscreen display.
 Based on the original firmware by VK2IDL, extended and adapted for the CYD platform.
@@ -37,10 +37,31 @@ Based on the original firmware by VK2IDL, extended and adapted for the CYD platf
 - SD card playback with CSV logging
 - QRSS / HSCW / Beacon / Contest
 - Interactive 4-point touch calibration
-- Clock with GMT offset, optional DS3231 RTC
+- Clock with GMT offset and miniature DS3231SN hardware RTC (v7.2.1), with time synchronization at boot and time retention when powered off if the RTC has a working backup supply
 - Farnsworth, Prosign, DAH ratio, Spacing weight
 - K3NG memories A–Z (NVS)
 - 6 preset messages (NVS)
+
+---
+
+## DS3231SN RTC — v7.2.1 hardware modification
+
+Version 7.2.1 integrates a miniature DS3231SN RTC module (approximately 10 × 10 mm) into the ESP32 CYD. The firmware uses a 100 kHz I²C bus, synchronizes system time from the RTC at boot, and supports reading and setting time with the `\Z` command over Serial and BLE.
+
+**Modification documented for the CYD board used in this project:** remove resistors **R16 and R20**; **leave the RGB LED in place**. Mount the small RTC module on the back of the CYD and make the following four connections, following the original wiring illustration:
+
+| RTC | CYD | Signal |
+|-----|-----|--------|
+| + (VCC) | Supply compatible with the RTC module and 3.3 V logic | Positive supply |
+| − (GND) | GND | Ground |
+| DATA (SDA) | GPIO16 | I²C data |
+| CLOCK (SCL) | GPIO17 | I²C clock |
+
+![CYD RTC modification wiring drawing](IW1RMM_CW_Encoder/docs/images/RTC_DS3231_CYD_collegamenti.png)
+
+**[Full RTC installation instructions — English](IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLATION_EN.md)** · [Guida in italiano](IW1RMM_CW_Encoder/docs/RTC_DS3231_INSTALLAZIONE.md)
+
+> Before applying power, verify the pinout and permitted supply voltage of the actual RTC module, and check for shorts. Time retention with the CYD switched off requires a working backup battery or equivalent backup power source.
 
 ---
 
@@ -121,10 +142,10 @@ It supports the same K3NG command set available via Serial.
 
 1. Clone the repository
 ```bash
-git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
+git clone https://github.com/mfalco1959/IW1RMM_CW_Encoder.git
 ```
-2. Copy `include/lv_conf.h` into the sketch folder (same directory as `IW1RMM_CW_Encoder.ino`)
-3. Configure TFT_eSPI `User_Setup.h` (see `docs/User_Setup_example.h`)
+2. Copy `IW1RMM_CW_Encoder/include/lv_conf.h` into the sketch folder (same directory as `IW1RMM_CW_Encoder.ino`)
+3. Configure TFT_eSPI `User_Setup.h` (see `IW1RMM_CW_Encoder/docs/User_Setup_example.h`)
 4. Compile with Arduino IDE — board: **ESP32 Dev Module**  
    In **Tools**, set:
    - Flash Mode: **DIO**
@@ -152,7 +173,8 @@ git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 | `\Q n` | QRSS (0/3/6/10/30 seconds per dit) |
 | `\T` | TUNE — continuous carrier |
 | `\J` | Reset touch calibration |
-| `\Z DDMMAAAAHHmmSS` | Set clock |
+| `\Z` | Read the hardware DS3231 date/time |
+| `\Z DDMMAAAAHHMMSS` | Set date/time (and DS3231 if detected) |
 | `\G ±n` | GMT offset |
 | `\PA text` | Save K3NG memory (A–Z) |
 | `\MA` | Send K3NG memory A |
@@ -165,8 +187,9 @@ git clone https://github.com/TUO_USER/IW1RMM_CW_Encoder.git
 
 | Version | Date | Notes |
 |---------|------|-------|
+| v7.2.1 | 2026-11 | Miniature DS3231SN RTC integration (GPIO16/17), boot-time synchronization, `\Z` read/write, and CYD hardware modification guide. |
 | v7.1.5 | 2026-03 | Code comments optimised, reduced code lines. Minor text adjustments. |
-| v7.1.4 | 2026-03 | Touch calibration, prosign, DS3231, extended K3NG |
+| v7.1.4 | 2026-03 | Touch calibration, prosign support, extended K3NG commands. |
 
 ---
 
